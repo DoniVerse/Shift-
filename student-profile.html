@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - Legal Career Platform</title>
+    <link rel="stylesheet" href="student-profile.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="close-btn" id="closeBtn">✕</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="profile-section">
+                <div class="profile-picture" id="profilePicture">
+                    <span class="profile-icon">👤</span>
+                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
+                </div>
+                <h1 class="profile-name" id="profileName">Student Name</h1>
+            </div>
+            
+            <div class="profile-menu">
+                <div class="menu-item" data-section="personal">
+                    <div class="menu-icon">👤</div>
+                    <div class="menu-text">Personal Information</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+                
+                <div class="menu-item" data-section="resume">
+                    <div class="menu-icon">📄</div>
+                    <div class="menu-text">Resume/CV</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+                
+                <div class="menu-item" data-section="skills">
+                    <div class="menu-icon">💡</div>
+                    <div class="menu-text">Skills and Experience</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+                
+                <div class="menu-item" data-section="education">
+                    <div class="menu-icon">🎓</div>
+                    <div class="menu-text">Education Details</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+                
+                <div class="menu-item" data-section="applications">
+                    <div class="menu-icon">🕒</div>
+                    <div class="menu-text">Job Application History</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+                
+                <div class="menu-item" data-section="settings">
+                    <div class="menu-icon">⚙️</div>
+                    <div class="menu-text">Settings</div>
+                    <div class="menu-arrow">›</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for different sections -->
+    <div class="modal" id="sectionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Section Title</h2>
+                <button class="modal-close" id="modalClose">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="student-profile.js"></script>
+</body>
+</html>

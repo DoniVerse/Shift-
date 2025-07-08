@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Sign Up - Legal Career Platform</title>
+    <link rel="stylesheet" href="studentsignup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">S</div>
+        </div>
+        
+        <div class="main-content">
+            <h1 class="title">Student Sign Up</h1>
+            
+            <form class="signup-form" id="studentSignupForm">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="universityName">University Name</label>
+                    <input type="text" id="universityName" name="universityName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="yearOfStudy">Year of Study</label>
+                    <select id="yearOfStudy" name="yearOfStudy" required>
+                        <option value="">Select Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                        <option value="5">5th Year</option>
+                      
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <input type="text" id="department" name="department" placeholder="e.g., Law, Legal Studies" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="linkedinUrl">LinkedIn Profile URL</label>
+                    <input type="url" id="linkedinUrl" name="linkedinUrl" placeholder="https://linkedin.com/in/yourprofile">
+                </div>
+                
+                <div class="form-group file-upload-group">
+                    <label for="profilePicture">Profile Picture</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="profilePicture" name="profilePicture" accept="image/*">
+                        <div class="file-upload-display" id="profilePictureDisplay">
+                            <span class="upload-icon">📷</span>
+                            <span class="upload-text">Choose profile picture</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group file-upload-group">
+                    <label for="studentId">Student ID Picture</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="studentId" name="studentId" accept="image/*" required>
+                        <div class="file-upload-display" id="studentIdDisplay">
+                            <span class="upload-icon">🆔</span>
+                            <span class="upload-text">Upload student ID picture</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="signup-btn">Sign Up</button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button type="button" class="google-btn">
+                    <span class="google-icon">G</span>
+                    Sign Up with Google
+                </button>
+            </form>
+            
+            <div class="login-link">
+                Already have an account? <a href="studentlogin.html">Log in</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="studentsignup.js"></script>
+</body>
+</html>

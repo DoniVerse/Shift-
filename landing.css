@@ -1,0 +1,209 @@
+:root {
+    --color-primary: #d17e7e;
+    --color-primary-dark: #c06c6c;
+    --color-secondary: #5a3e5d;
+    --color-secondary-light: #8c6c8e;
+    --color-secondary-dark: #4a3249;
+    --color-bg-light: #f8f0eb;
+    --color-bg-light-alt: #f5e6e0;
+    --color-white: #ffffff;
+    --color-text: #333333;
+    --color-text-light: #666666;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-light-alt) 100%);
+    min-height: 100vh;
+    color: var(--color-text);
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    padding: 60px 20px;
+    text-align: center;
+    position: relative;
+}
+
+.logo {
+    width: 100px;
+    height: 100px;
+    background: var(--color-white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 48px;
+    font-weight: bold;
+    color: var(--color-secondary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.main-content {
+    padding: 60px 40px;
+    flex: 1;
+    background: var(--color-white);
+}
+
+.title {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-secondary);
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.role-option {
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 40px 30px;
+    margin-bottom: 24px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+}
+
+.role-option:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    border-color: var(--color-primary);
+}
+
+.role-option:active {
+    transform: translateY(-2px);
+}
+
+.role-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: var(--color-primary);
+    background: var(--color-bg-light);
+    border-radius: 50%;
+}
+
+.role-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--color-secondary);
+    margin-bottom: 12px;
+}
+
+.role-description {
+    font-size: 18px;
+    color: var(--color-text-light);
+    line-height: 1.5;
+}
+
+.selected {
+    border-color: var(--color-primary);
+    background: var(--color-bg-light);
+}
+
+.selected .role-icon {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.continue-btn {
+    background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-dark) 100%);
+    color: var(--color-white);
+    border: none;
+    border-radius: 16px;
+    padding: 20px 40px;
+    font-size: 20px;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.continue-btn.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.continue-btn:hover.active {
+    background: linear-gradient(135deg, var(--color-secondary-light) 0%, var(--color-secondary) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(90, 62, 93, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        max-width: 100%;
+        box-shadow: none;
+    }
+    
+    .main-content {
+        padding: 40px 20px;
+    }
+    
+    .title {
+        font-size: 28px;
+        margin-bottom: 40px;
+    }
+    
+    .role-option {
+        padding: 30px 20px;
+    }
+    
+    .role-title {
+        font-size: 22px;
+    }
+    
+    .role-description {
+        font-size: 16px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container {
+        max-width: 800px;
+    }
+    
+    .main-content {
+        padding: 80px 60px;
+    }
+    
+    .title {
+        font-size: 42px;
+    }
+    
+    .role-options-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+    
+    .role-option {
+        margin-bottom: 0;
+    }
+}
