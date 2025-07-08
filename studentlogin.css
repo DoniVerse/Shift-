@@ -22,17 +22,26 @@ body {
     background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-light-alt) 100%);
     min-height: 100vh;
     color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
 .container {
     width: 100%;
-    max-width: 450px;
+    max-width: 1200px;
     margin: 0 auto;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    padding: 0 20px;
+}
+
+.login-card {
+    max-width: 500px;
+    margin: 0 auto;
     background: var(--color-white);
+    border-radius: 16px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
 .header {

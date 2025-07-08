@@ -30,9 +30,15 @@ body {
 
 .container {
     width: 100%;
-    max-width: 400px;
+    max-width: 1200px;
     margin: 0 auto;
-    min-height: 100vh;
+    padding: 0 20px;
+}
+
+.profile-card {
+    max-width: 500px;
+    margin: 0 auto;
+    min-height: 80vh;
     background: var(--color-white);
     border-radius: 12px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);

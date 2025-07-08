@@ -30,8 +30,9 @@ body {
 
 .container {
   width: 100%;
-  max-width: 450px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 .signup-card {
@@ -40,6 +41,8 @@ body {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   position: relative;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .header {
@@ -256,13 +259,14 @@ background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secon
 }
 
 /* Responsive adjustments */
-@media (max-width: 500px) {
+@media (max-width: 768px) {
   .container {
-    max-width: 100%;
+    padding: 0 10px;
   }
 
   .signup-card {
     border-radius: 12px;
+    margin: 0;
   }
 
   .content {
@@ -273,6 +277,13 @@ background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secon
   .form-field select {
     padding: 12px;
     font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-card {
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
