@@ -196,6 +196,29 @@ background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secon
   flex-shrink: 0;
 }
 
+.signin-link {
+  text-align: center;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.signin-link p {
+  color: var(--color-text-light);
+  font-size: 14px;
+}
+
+.signin-link a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.signin-link a:hover {
+  color: var(--color-primary-dark);
+}
+
 /* Form validation styles */
 .form-field input.error,
 .form-field select.error {

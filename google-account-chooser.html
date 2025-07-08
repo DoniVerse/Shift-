@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose an account</title>
+    <link rel="stylesheet" href="google-account-chooser-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="chooser-card">
+            <div class="header">
+                <div class="google-logo">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>Google</span>
+                </div>
+                <h1>Choose an account</h1>
+                <p>to continue to Shift</p>
+            </div>
+            
+            <div class="accounts-list">
+                <div class="account-item" onclick="selectAccount('john.doe@gmail.com', 'John Doe')">
+                    <div class="account-avatar">
+                        <img src="https://via.placeholder.com/40x40/4285F4/ffffff?text=JD" alt="John Doe">
+                    </div>
+                    <div class="account-info">
+                        <div class="account-name">John Doe</div>
+                        <div class="account-email">john.doe@gmail.com</div>
+                    </div>
+                </div>
+                
+                <div class="account-item" onclick="selectAccount('jane.smith@gmail.com', 'Jane Smith')">
+                    <div class="account-avatar">
+                        <img src="https://via.placeholder.com/40x40/34A853/ffffff?text=JS" alt="Jane Smith">
+                    </div>
+                    <div class="account-info">
+                        <div class="account-name">Jane Smith</div>
+                        <div class="account-email">jane.smith@gmail.com</div>
+                    </div>
+                </div>
+                
+                <div class="account-item" onclick="selectAccount('work.account@company.com', 'Work Account')">
+                    <div class="account-avatar">
+                        <img src="https://via.placeholder.com/40x40/EA4335/ffffff?text=WA" alt="Work Account">
+                    </div>
+                    <div class="account-info">
+                        <div class="account-name">Work Account</div>
+                        <div class="account-email">work.account@company.com</div>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="account-item add-account" onclick="addAccount()">
+                    <div class="account-avatar add-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="#5f6368">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                    </div>
+                    <div class="account-info">
+                        <div class="account-name">Use another account</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <div class="privacy-links">
+                    <a href="#">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get the source page from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const source = urlParams.get('source') || 'signin';
+        
+        function selectAccount(email, name) {
+            // Simulate account selection
+            console.log(`Selected account: ${name} (${email})`);
+            
+            // Show loading state
+            const accountItems = document.querySelectorAll('.account-item');
+            accountItems.forEach(item => {
+                item.style.pointerEvents = 'none';
+                item.style.opacity = '0.6';
+            });
+            
+            // Simulate authentication delay
+            setTimeout(() => {
+                if (source === 'signup') {
+                    alert(`Account created successfully with Google account: ${name} (${email})`);
+                    window.location.href = 'employer-signin.html';
+                } else {
+                    alert(`Signed in successfully with Google account: ${name} (${email})`);
+                    // Redirect to dashboard or main page
+                    window.location.href = 'employer-signin.html'; // Replace with actual dashboard
+                }
+            }, 1500);
+        }
+        
+        function addAccount() {
+            alert('This would redirect to Google\'s account creation/login flow');
+            // In a real implementation, this would redirect to Google's OAuth flow
+        }
+        
+        // Add loading animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const card = document.querySelector('.chooser-card');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.4s ease-out';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
