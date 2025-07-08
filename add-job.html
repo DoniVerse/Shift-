@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift - Add Job</title>
+    <link rel="stylesheet" href="add-job-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="logo">S</div>
+            <div class="spacer"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="page-title">Add Job Details</h1>
+            
+            <form id="job-form" class="job-form">
+                <div class="form-group">
+                    <label for="job-title">Job Title</label>
+                    <input type="text" id="job-title" placeholder="e.g., Intellectual Property Law" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="job-description">Description:</label>
+                    <textarea id="job-description" placeholder="• Describe the main responsibilities and duties
+• Add key focus areas of the role
+• Include any specific legal areas covered
+• Mention client interaction requirements" rows="8" required></textarea>
+                </div>
+
+
+
+                <div class="payment-section">
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="payment-code">Payment Code</label>
+                            <input type="text" id="payment-code" placeholder="e.g., ETB 200" required>
+                        </div>
+                        <div class="form-group half">
+                            <label for="payment-type">Payment Type</label>
+                            <select id="payment-type" required>
+                                <option value="">Select Type</option>
+                                <option value="hourly">Hourly</option>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="project">Per Project</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="publish-btn">Publish Job</button>
+            </form>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="dashboard.html" class="nav-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Home</span>
+            </a>
+            <a href="messages.html" class="nav-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Messages</span>
+            </a>
+            <a href="profile.html" class="nav-item active">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>Profile</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+
+        document.getElementById('job-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const jobTitle = document.getElementById('job-title').value;
+            const jobDescription = document.getElementById('job-description').value;
+            const paymentCode = document.getElementById('payment-code').value;
+            const paymentType = document.getElementById('payment-type').value;
+
+            if (jobTitle && jobDescription && paymentCode && paymentType) {
+                alert(`Job "${jobTitle}" has been published successfully!`);
+                // In a real app, you would send this data to your backend
+                console.log({
+                    title: jobTitle,
+                    description: jobDescription,
+                    paymentCode: paymentCode,
+                    paymentType: paymentType
+                });
+                
+                // Redirect to jobs dashboard
+                // window.location.href = 'employer-dashboard.html';
+            } else {
+                alert('Please fill in all required fields');
+            }
+        });
+
+        // Auto-resize textareas
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+            });
+        });
+
+        // Form validation
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.hasAttribute('required') && !this.value.trim()) {
+                    this.style.borderColor = '#dc2626';
+                } else {
+                    this.style.borderColor = 'var(--color-primary)';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
