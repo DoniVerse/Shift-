@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Authentication</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8f0eb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .loading-container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #d17e7e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .error {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        
+        .success {
+            color: #059669;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <h2>Authenticating with Google</h2>
+        <p>Please wait while we process your Google account information...</p>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+        const error = urlParams.get('error');
+        const source = urlParams.get('source') || 'signin';
+        
+        const messageDiv = document.getElementById('message');
+        
+        if (error) {
+            // Handle authentication error
+            messageDiv.innerHTML = `
+                <div class="error">
+                    <strong>Authentication Failed</strong><br>
+                    ${error === 'access_denied' ? 'You cancelled the Google sign-in process.' : 'An error occurred during authentication.'}
+                </div>
+            `;
+            
+            // Redirect back after 3 seconds
+            setTimeout(() => {
+                window.location.href = source === 'signup' ? 'employer-signup.html' : 'employer-signin.html';
+            }, 3000);
+            
+        } else if (authCode) {
+            // Handle successful authentication
+            handleGoogleCallback(authCode, source);
+        } else {
+            // No code or error - something went wrong
+            messageDiv.innerHTML = `
+                <div class="error">
+                    <strong>Invalid Response</strong><br>
+                    No authentication code received from Google.
+                </div>
+            `;
+            
+            setTimeout(() => {
+                window.location.href = source === 'signup' ? 'employer-signup.html' : 'employer-signin.html';
+            }, 3000);
+        }
+        
+        async function handleGoogleCallback(code, source) {
+            try {
+                // In a real application, you would send this code to your backend server
+                // The server would exchange it for an access token and get user info
+                
+                // For demonstration, we'll simulate the process
+                messageDiv.innerHTML = `
+                    <div class="success">
+                        <strong>Authentication Successful!</strong><br>
+                        Google account verified successfully.
+                    </div>
+                `;
+                
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Simulate getting user info (in real app, this comes from your backend)
+                const mockUserInfo = {
+                    email: 'user@gmail.com',
+                    name: 'Google User',
+                    picture: 'https://via.placeholder.com/40x40/4285F4/ffffff?text=GU'
+                };
+                
+                if (source === 'signup') {
+                    // Handle signup flow
+                    alert(`Account created successfully!\nWelcome ${mockUserInfo.name}!\nEmail: ${mockUserInfo.email}`);
+                    window.location.href = 'employer-signin.html';
+                } else {
+                    // Handle signin flow
+                    alert(`Welcome back ${mockUserInfo.name}!\nSigned in with: ${mockUserInfo.email}`);
+                    // Redirect to dashboard or main application
+                    window.location.href = 'employer-signin.html'; // Replace with actual dashboard
+                }
+                
+            } catch (error) {
+                console.error('Error processing Google authentication:', error);
+                messageDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Processing Error</strong><br>
+                        Failed to process your Google account information.
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = source === 'signup' ? 'employer-signup.html' : 'employer-signin.html';
+                }, 3000);
+            }
+        }
+        
+        // Real implementation would look like this:
+        /*
+        async function handleGoogleCallback(code, source) {
+            try {
+                // Send the authorization code to your backend
+                const response = await fetch('/api/auth/google/callback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        source: source
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store user session/token
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userInfo', JSON.stringify(data.user));
+                    
+                    if (source === 'signup') {
+                        alert(`Account created successfully!\nWelcome ${data.user.name}!`);
+                        window.location.href = 'employer-signin.html';
+                    } else {
+                        alert(`Welcome back ${data.user.name}!`);
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    throw new Error(data.message || 'Authentication failed');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Authentication Error</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = source === 'signup' ? 'employer-signup.html' : 'employer-signin.html';
+                }, 3000);
+            }
+        }
+        */
+    </script>
+</body>
+</html>

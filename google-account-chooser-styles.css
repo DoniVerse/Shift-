@@ -1,0 +1,273 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.chooser-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #dadce0;
+}
+
+.header {
+  padding: 48px 40px 36px;
+  text-align: center;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.google-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.google-logo span {
+  font-size: 22px;
+  color: #5f6368;
+  font-weight: 400;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 400;
+  color: #202124;
+  margin-bottom: 8px;
+  line-height: 1.3333;
+}
+
+.header p {
+  font-size: 16px;
+  color: #5f6368;
+  font-weight: 400;
+}
+
+.accounts-list {
+  padding: 0;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.account-item:hover {
+  background-color: #f8f9fa;
+}
+
+.account-item:focus {
+  outline: none;
+  border-color: #1a73e8;
+  background-color: #f8f9fa;
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.add-icon {
+  background-color: #f8f9fa;
+  border: 1px solid #dadce0;
+}
+
+.account-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202124;
+  line-height: 1.4286;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-email {
+  font-size: 14px;
+  color: #5f6368;
+  line-height: 1.4286;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-account .account-name {
+  color: #5f6368;
+  font-weight: 400;
+}
+
+.divider {
+  height: 1px;
+  background-color: #e8eaed;
+  margin: 8px 0;
+}
+
+.footer {
+  padding: 24px 40px;
+  border-top: 1px solid #e8eaed;
+  background-color: #f8f9fa;
+}
+
+.privacy-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.privacy-links a {
+  color: #5f6368;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.privacy-links a:hover {
+  color: #202124;
+}
+
+.privacy-links span {
+  color: #5f6368;
+}
+
+/* Loading states */
+.account-item.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.account-item.selected {
+  background-color: #e8f0fe;
+  border-color: #1a73e8;
+}
+
+.account-item.selected::after {
+  content: "✓";
+  color: #1a73e8;
+  font-weight: bold;
+  margin-left: auto;
+  font-size: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .container {
+    max-width: 100%;
+  }
+  
+  .chooser-card {
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    min-height: 100vh;
+  }
+  
+  .header {
+    padding: 32px 24px 24px;
+  }
+  
+  .account-item {
+    padding: 16px 24px;
+  }
+  
+  .footer {
+    padding: 24px;
+  }
+}
+
+/* Animation for page load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chooser-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Focus management for accessibility */
+.account-item:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+
+/* Hover effects for better UX */
+.account-item:active {
+  background-color: #e8eaed;
+}
+
+.add-account:hover .add-icon {
+  background-color: #e8eaed;
+}
+
+/* Custom scrollbar for long account lists */
+.accounts-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.accounts-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.accounts-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.accounts-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.accounts-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
