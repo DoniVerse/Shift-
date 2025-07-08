@@ -175,6 +175,7 @@ body {
   font-weight: 500;
   transition: color 0.3s ease;
   padding: 8px;
+  cursor: pointer;
 }
 
 .nav-item:hover,

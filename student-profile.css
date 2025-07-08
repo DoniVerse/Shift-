@@ -22,14 +22,21 @@ body {
     background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-light-alt) 100%);
     min-height: 100vh;
     color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
 .container {
-    max-width: 600px;
+    width: 100%;
+    max-width: 400px;
     margin: 0 auto;
     min-height: 100vh;
     background: var(--color-white);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
     position: relative;
 }
 
@@ -315,36 +322,32 @@ body {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 480px) {
     .container {
         max-width: 100%;
-        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
     }
-    
+
     .main-content {
         padding: 0 20px 40px;
     }
-    
+
     .modal-content {
         margin: 10% auto;
         width: 95%;
     }
-    
+
     .modal-body {
         padding: 20px;
     }
-    
+
     .menu-item {
         padding: 16px 0;
     }
-    
+
     .menu-text {
         font-size: 16px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .container {
-        max-width: 700px;
     }
 }

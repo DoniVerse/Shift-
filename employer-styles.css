@@ -196,6 +196,29 @@ background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secon
   flex-shrink: 0;
 }
 
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e1e5e9;
+}
+
+.divider span {
+  background: var(--color-white);
+  padding: 0 20px;
+  color: var(--color-text-light);
+  font-size: 14px;
+}
+
 .signin-link {
   text-align: center;
   margin-top: 25px;

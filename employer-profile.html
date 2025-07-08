@@ -110,20 +110,15 @@
         </div>
     </div>
 
-    <!-- Modal Overlay -->
-    <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
+    <!-- Modal for different sections -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modal-title">Information</h2>
-                <button class="modal-close" onclick="closeModal()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
+                <h2 id="modal-title">Section Title</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
             </div>
             <div class="modal-body" id="modal-body">
-                <!-- Content will be dynamically inserted here -->
+                <!-- Content will be dynamically loaded here -->
             </div>
         </div>
     </div>
@@ -211,7 +206,7 @@
         function showModal(title, content) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').innerHTML = content;
-            document.getElementById('modal-overlay').style.display = 'flex';
+            document.getElementById('modal-overlay').style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
 
