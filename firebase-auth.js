@@ -330,12 +330,15 @@ class FirebaseAuthManager {
 
     // Update localStorage for compatibility
     updateLocalStorage(userData) {
+        // Ensure yearOfStudy is properly converted to number
+        const yearOfStudy = parseInt(userData.yearOfStudy) || parseInt(userData.year) || 2;
+
         const localData = {
             name: userData.fullName || userData.name,
             email: userData.email,
             userType: userData.userType,
             university: userData.universityName || userData.university,
-            yearOfStudy: userData.yearOfStudy,
+            yearOfStudy: yearOfStudy, // Ensure this is a number
             department: userData.department,
             linkedinUrl: userData.linkedinUrl,
             firebaseUid: this.currentUser?.uid,
@@ -345,7 +348,8 @@ class FirebaseAuthManager {
 
         localStorage.setItem('currentUser', JSON.stringify(localData));
         localStorage.setItem('userAuthenticated', 'true');
-        console.log('User data stored in localStorage:', localData);
+        console.log('User data stored in localStorage with yearOfStudy:', yearOfStudy);
+        console.log('Full user data:', localData);
     }
 
     // Sync user data

@@ -103,16 +103,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function getUserData() {
         // Try to get from localStorage first (from signup/login)
         const userData = localStorage.getItem('currentUser');
+        console.log('Raw user data from localStorage:', userData);
+
         if (userData) {
-            return JSON.parse(userData);
+            const parsedData = JSON.parse(userData);
+            console.log('Parsed user data:', parsedData);
+            console.log('Year of study:', parsedData.yearOfStudy);
+            return parsedData;
         }
-        
+
         // Fallback to URL params or default
         const urlParams = new URLSearchParams(window.location.search);
-        return {
+        const fallbackData = {
             name: urlParams.get('name') || 'Student',
             yearOfStudy: parseInt(urlParams.get('year')) || 2
         };
+        console.log('Using fallback data:', fallbackData);
+        return fallbackData;
     }
 
     // Display user info
@@ -149,15 +156,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const userData = getUserData();
         const jobsGrid = document.getElementById('jobsGrid');
         const noJobsMessage = document.getElementById('noJobsMessage');
-        const jobs = jobCategories[userData.yearOfStudy] || [];
+
+        console.log('=== Job Filtering Debug ===');
+        console.log('User data:', userData);
+        console.log('User year of study:', userData.yearOfStudy);
+        console.log('Available job categories:', Object.keys(jobCategories));
+
+        // Ensure yearOfStudy is a number and get jobs for ONLY that year
+        const userYear = parseInt(userData.yearOfStudy) || 2;
+        console.log('Parsed user year:', userYear);
+
+        const jobs = jobCategories[userYear] || [];
+        console.log('Jobs for year', userYear, ':', jobs);
+        console.log('Number of jobs found:', jobs.length);
+
+        // ALWAYS clear the grid first to remove any previous jobs
+        jobsGrid.innerHTML = '';
 
         if (jobs.length === 0) {
+            console.log('No jobs found for this year - showing no jobs message');
             jobsGrid.style.display = 'none';
             noJobsMessage.style.display = 'block';
+            noJobsMessage.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h3>No jobs available for Year ${userYear}</h3>
+                    <p>Jobs are available for years 2, 3, 4, and 5.</p>
+                    <p>Your current year: ${userYear}</p>
+                </div>
+            `;
             return;
         }
 
-        jobsGrid.innerHTML = '';
+        // Show jobs grid and hide no jobs message
+        jobsGrid.style.display = 'grid';
         noJobsMessage.style.display = 'none';
 
         jobs.forEach(job => {
@@ -177,9 +208,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Here you would typically navigate to job details page
                 // window.location.href = `job-details.html?id=${job.id}`;
             });
-            
+
             jobsGrid.appendChild(jobCard);
         });
+
+        console.log(`✅ SUCCESS: Filtered and displayed ${jobs.length} jobs for year ${userYear} ONLY`);
+        console.log('Jobs displayed:', jobs.map(j => j.title));
     }
 
     // Search functionality

@@ -219,30 +219,52 @@ class ChatApp {
 
     // Load user's conversations
     async loadConversations() {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            console.log('No current user, cannot load conversations');
+            return;
+        }
+
+        console.log('Loading conversations for user:', this.currentUser.uid);
 
         try {
             const conversationsRef = collection(db, 'conversations');
             const q = query(
                 conversationsRef,
-                where('participants', 'array-contains', this.currentUser.uid),
-                orderBy('updatedAt', 'desc')
+                where('participants', 'array-contains', this.currentUser.uid)
             );
 
             const unsubscribe = onSnapshot(q, (snapshot) => {
+                console.log('Conversations snapshot received, size:', snapshot.size);
                 this.conversations.clear();
                 this.conversationsList.innerHTML = '';
 
                 if (snapshot.empty) {
+                    console.log('No conversations found');
                     this.showEmptyConversations();
                     return;
                 }
 
+                const conversationsArray = [];
                 snapshot.forEach((doc) => {
                     const conversation = { id: doc.id, ...doc.data() };
+                    console.log('Found conversation:', conversation.id, conversation);
+                    conversationsArray.push(conversation);
                     this.conversations.set(doc.id, conversation);
+                });
+
+                // Sort by updatedAt if available, otherwise by createdAt
+                conversationsArray.sort((a, b) => {
+                    const aTime = a.updatedAt?.toDate() || a.createdAt?.toDate() || new Date(0);
+                    const bTime = b.updatedAt?.toDate() || b.createdAt?.toDate() || new Date(0);
+                    return bTime - aTime;
+                });
+
+                // Render sorted conversations
+                conversationsArray.forEach(conversation => {
                     this.renderConversationItem(conversation);
                 });
+
+                console.log(`✅ Loaded ${conversationsArray.length} conversations`);
             }, (error) => {
                 console.error('Error loading conversations:', error);
                 this.showEmptyConversations();
@@ -297,25 +319,36 @@ class ChatApp {
 
     // Render conversation item in sidebar
     renderConversationItem(conversation) {
+        console.log('Rendering conversation item:', conversation.id);
+
         const otherParticipantId = conversation.participants.find(id => id !== this.currentUser.uid);
         const otherUser = this.users.get(otherParticipantId);
-        
+
+        console.log('Other participant:', otherParticipantId, otherUser);
+
         const conversationElement = document.createElement('div');
         conversationElement.className = 'conversation-item';
         conversationElement.dataset.conversationId = conversation.id;
-        
+
         const unreadCount = conversation.unreadCount?.[this.currentUser.uid] || 0;
-        const lastMessageTime = conversation.lastMessageTime ? 
-            this.formatTime(conversation.lastMessageTime.toDate()) : '';
+        const lastMessageTime = conversation.lastMessageTime ?
+            this.formatTime(conversation.lastMessageTime.toDate()) :
+            (conversation.createdAt ? this.formatTime(conversation.createdAt.toDate()) : 'Recently');
+
+        // Use fallback data if user not found
+        const userName = otherUser?.name || 'Unknown User';
+        const userAvatar = otherUser?.profilePicture ||
+            `https://via.placeholder.com/50x50/5a3e5d/ffffff?text=${userName.charAt(0)}`;
+        const isOnline = otherUser?.isOnline || false;
 
         conversationElement.innerHTML = `
             <div class="conversation-avatar">
-                <img src="${otherUser?.profilePicture || 'https://via.placeholder.com/50x50/5a3e5d/ffffff?text=' + (otherUser?.name?.charAt(0) || 'U')}" alt="User">
-                ${otherUser?.isOnline ? '<div class="online-indicator"></div>' : ''}
+                <img src="${userAvatar}" alt="User">
+                ${isOnline ? '<div class="online-indicator"></div>' : ''}
             </div>
             <div class="conversation-info">
-                <div class="conversation-name">${otherUser?.name || 'Unknown User'}</div>
-                <div class="conversation-preview">${conversation.lastMessage || 'No messages yet'}</div>
+                <div class="conversation-name">${userName}</div>
+                <div class="conversation-preview">${conversation.lastMessage || 'Start a conversation'}</div>
             </div>
             <div class="conversation-meta">
                 <div class="conversation-time">${lastMessageTime}</div>
@@ -324,10 +357,12 @@ class ChatApp {
         `;
 
         conversationElement.addEventListener('click', () => {
+            console.log('Conversation clicked:', conversation.id);
             this.openConversation(conversation.id);
         });
 
         this.conversationsList.appendChild(conversationElement);
+        console.log('✅ Conversation item rendered');
     }
 
     // Show empty conversations state
