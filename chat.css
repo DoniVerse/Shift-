@@ -920,11 +920,21 @@ body {
     padding: 12px;
     cursor: pointer;
     border-radius: 8px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 .user-item:hover {
     background: var(--color-bg-light);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(209, 126, 126, 0.2);
+}
+
+.user-item:active {
+    transform: translateY(0);
+    background: var(--color-primary);
+    color: white;
 }
 
 .user-item-avatar img {

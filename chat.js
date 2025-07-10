@@ -38,9 +38,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+console.log('Initializing Firebase with config:', firebaseConfig);
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+console.log('Firebase initialized - App:', app.name, 'DB:', !!db, 'Auth:', !!auth);
 
 // Chat Application Class
 class ChatApp {
@@ -341,40 +343,91 @@ class ChatApp {
 
     // Open conversation
     async openConversation(conversationId) {
+        console.log('=== Opening conversation ===');
+        console.log('Conversation ID:', conversationId);
+
         this.currentConversation = conversationId;
         const conversation = this.conversations.get(conversationId);
-        
-        if (!conversation) return;
 
-        // Update UI
-        this.showChatArea();
-        this.updateActiveConversation(conversationId);
-        
-        // Get other participant info
-        const otherParticipantId = conversation.participants.find(id => id !== this.currentUser.uid);
-        const otherUser = this.users.get(otherParticipantId);
-        
-        if (otherUser) {
-            this.chatUserName.textContent = otherUser.name;
-            this.chatUserAvatar.src = otherUser.profilePicture || 
-                `https://via.placeholder.com/40x40/5a3e5d/ffffff?text=${otherUser.name.charAt(0)}`;
-            
-            if (otherUser.isOnline) {
-                this.chatUserStatus.textContent = 'Online';
-                this.chatUserStatus.className = 'user-status online';
-                this.chatUserOnline.style.display = 'block';
+        console.log('Conversation from cache:', conversation);
+        console.log('Available conversations:', Array.from(this.conversations.keys()));
+
+        if (!conversation) {
+            console.log('⚠️ Conversation not found in cache, creating temporary conversation data');
+            // If conversation not in cache, create temporary data
+            const otherParticipantId = conversationId.split('_').find(id => id !== this.currentUser.uid);
+            const otherUser = this.users.get(otherParticipantId);
+
+            console.log('Other participant ID:', otherParticipantId);
+            console.log('Other user data:', otherUser);
+
+            if (otherUser) {
+                // Create temporary conversation data
+                const tempConversation = {
+                    id: conversationId,
+                    participants: [this.currentUser.uid, otherParticipantId],
+                    lastMessage: null,
+                    lastMessageTime: null
+                };
+
+                // Update UI with user info directly
+                this.showChatArea();
+                this.updateActiveConversation(conversationId);
+
+                this.chatUserName.textContent = otherUser.name;
+                this.chatUserAvatar.src = otherUser.profilePicture ||
+                    `https://via.placeholder.com/40x40/5a3e5d/ffffff?text=${otherUser.name.charAt(0)}`;
+
+                if (otherUser.isOnline) {
+                    this.chatUserStatus.textContent = 'Online';
+                    this.chatUserStatus.className = 'user-status online';
+                    this.chatUserOnline.style.display = 'block';
+                } else {
+                    this.chatUserStatus.textContent = `Last seen ${this.formatTime(otherUser.lastSeen?.toDate())}`;
+                    this.chatUserStatus.className = 'user-status';
+                    this.chatUserOnline.style.display = 'none';
+                }
+
+                console.log('✅ Chat area opened with temporary data');
             } else {
-                this.chatUserStatus.textContent = `Last seen ${this.formatTime(otherUser.lastSeen?.toDate())}`;
-                this.chatUserStatus.className = 'user-status';
-                this.chatUserOnline.style.display = 'none';
+                console.error('❌ Other user not found');
+                return;
+            }
+        } else {
+            console.log('✅ Using cached conversation data');
+            // Update UI
+            this.showChatArea();
+            this.updateActiveConversation(conversationId);
+
+            // Get other participant info
+            const otherParticipantId = conversation.participants.find(id => id !== this.currentUser.uid);
+            const otherUser = this.users.get(otherParticipantId);
+
+            if (otherUser) {
+                this.chatUserName.textContent = otherUser.name;
+                this.chatUserAvatar.src = otherUser.profilePicture ||
+                    `https://via.placeholder.com/40x40/5a3e5d/ffffff?text=${otherUser.name.charAt(0)}`;
+
+                if (otherUser.isOnline) {
+                    this.chatUserStatus.textContent = 'Online';
+                    this.chatUserStatus.className = 'user-status online';
+                    this.chatUserOnline.style.display = 'block';
+                } else {
+                    this.chatUserStatus.textContent = `Last seen ${this.formatTime(otherUser.lastSeen?.toDate())}`;
+                    this.chatUserStatus.className = 'user-status';
+                    this.chatUserOnline.style.display = 'none';
+                }
             }
         }
 
         // Load messages
+        console.log('Loading messages for conversation:', conversationId);
         await this.loadMessages(conversationId);
-        
+
         // Mark messages as read
         await this.markMessagesAsRead(conversationId);
+
+        console.log('✅ Conversation opened successfully');
     }
 
     // Load messages for conversation
@@ -493,8 +546,14 @@ class ChatApp {
     }
 
     showChatArea() {
+        console.log('Showing chat area...');
+        console.log('Welcome screen element:', this.welcomeScreen);
+        console.log('Chat area element:', this.chatArea);
+
         this.welcomeScreen.style.display = 'none';
         this.chatArea.style.display = 'flex';
+
+        console.log('✅ Chat area should now be visible');
     }
 
     updateActiveConversation(conversationId) {
@@ -563,6 +622,8 @@ class ChatApp {
         this.users.forEach((user) => {
             const userElement = document.createElement('div');
             userElement.className = 'user-item';
+            userElement.style.cursor = 'pointer';
+            userElement.dataset.userId = user.id;
 
             userElement.innerHTML = `
                 <div class="user-item-avatar">
@@ -575,8 +636,21 @@ class ChatApp {
                 <div class="user-item-type">${user.userType || 'user'}</div>
             `;
 
-            userElement.addEventListener('click', () => {
+            // Add click event listener
+            userElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('User clicked:', user.name, user.id);
                 this.startConversationWithUser(user.id);
+            });
+
+            // Add hover effect
+            userElement.addEventListener('mouseenter', () => {
+                userElement.style.backgroundColor = '#f8f9fa';
+            });
+
+            userElement.addEventListener('mouseleave', () => {
+                userElement.style.backgroundColor = '';
             });
 
             this.usersList.appendChild(userElement);
@@ -584,32 +658,64 @@ class ChatApp {
     }
 
     async startConversationWithUser(userId) {
+        console.log('=== Starting conversation ===');
+        console.log('Target user ID:', userId);
+        console.log('Current user:', this.currentUser?.uid);
+        console.log('Current user email:', this.currentUser?.email);
+
+        if (!this.currentUser) {
+            console.error('No current user - cannot start conversation');
+            alert('Please sign in first to start a conversation');
+            return;
+        }
+
+        if (!userId) {
+            console.error('No user ID provided');
+            return;
+        }
+
         try {
             const participants = [this.currentUser.uid, userId].sort();
             const conversationId = participants.join('_');
+            console.log('Participants:', participants);
+            console.log('Conversation ID:', conversationId);
 
-            // Create conversation if it doesn't exist
+            // Create conversation (we'll use merge: true to avoid conflicts)
             const conversationRef = doc(db, 'conversations', conversationId);
-            const conversationSnap = await getDoc(conversationRef);
+            console.log('Conversation reference created');
 
-            if (!conversationSnap.exists()) {
-                await setDoc(conversationRef, {
-                    id: conversationId,
-                    participants: participants,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                    lastMessage: null,
-                    lastMessageTime: null,
-                    unreadCount: {}
-                });
-            }
+            console.log('Creating/updating conversation...');
+
+            const conversationData = {
+                id: conversationId,
+                participants: participants,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastMessage: null,
+                lastMessageTime: null,
+                unreadCount: {}
+            };
+
+            console.log('Conversation data:', conversationData);
+            console.log('About to call setDoc with merge...');
+
+            // Use merge: true to create if doesn't exist, or update if exists
+            await setDoc(conversationRef, conversationData, { merge: true });
+            console.log('✅ Conversation created/updated successfully');
 
             // Close modal and open conversation
+            console.log('Closing modal and opening conversation');
             this.closeModal('newChatModal');
             this.openConversation(conversationId);
 
         } catch (error) {
-            console.error('Error starting conversation:', error);
+            console.error('=== Error Details ===');
+            console.error('Error message:', error.message);
+            console.error('Error code:', error.code);
+            console.error('Full error:', error);
+            console.error('Current user auth state:', this.currentUser);
+
+            alert('Failed to start conversation: ' + error.message + '\nCheck console for details.');
         }
     }
 

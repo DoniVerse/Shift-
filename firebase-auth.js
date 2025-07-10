@@ -338,10 +338,14 @@ class FirebaseAuthManager {
             yearOfStudy: userData.yearOfStudy,
             department: userData.department,
             linkedinUrl: userData.linkedinUrl,
-            firebaseUid: this.currentUser?.uid
+            firebaseUid: this.currentUser?.uid,
+            // Add timestamp to track when user was stored
+            lastUpdated: new Date().toISOString()
         };
 
         localStorage.setItem('currentUser', JSON.stringify(localData));
+        localStorage.setItem('userAuthenticated', 'true');
+        console.log('User data stored in localStorage:', localData);
     }
 
     // Sync user data
@@ -384,8 +388,23 @@ class FirebaseAuthManager {
     // Sign out
     async signOutUser() {
         try {
+            if (this.currentUser) {
+                // Update offline status
+                const userRef = doc(db, 'users', this.currentUser.uid);
+                await updateDoc(userRef, {
+                    isOnline: false,
+                    lastSeen: new Date()
+                });
+            }
+
             await signOut(auth);
+            this.currentUser = null;
+
+            // Clear localStorage
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('userAuthenticated');
+
+            console.log('User signed out and localStorage cleared');
             window.location.href = 'landing.html';
         } catch (error) {
             console.error('Sign out error:', error);
