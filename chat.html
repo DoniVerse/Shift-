@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Shift Platform</title>
+    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Sidebar -->
+        <div class="chat-sidebar" id="chatSidebar">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <img id="currentUserAvatar" src="https://via.placeholder.com/40x40/d17e7e/ffffff?text=U" alt="User">
+                        <div class="online-indicator"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3 id="currentUserName">Loading...</h3>
+                        <span id="currentUserType" class="user-type">Student</span>
+                    </div>
+                </div>
+                <div class="sidebar-actions">
+                    <button class="action-btn" id="newChatBtn" title="New Chat">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="action-btn" id="settingsBtn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Search conversations..." class="search-input">
+                    <button class="search-clear" id="searchClear" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conversation List -->
+            <div class="conversations-container">
+                <div class="conversations-list" id="conversationsList">
+                    <!-- Conversations will be loaded here -->
+                    <div class="loading-conversations">
+                        <div class="loading-spinner"></div>
+                        <span>Loading conversations...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Main Area -->
+        <div class="chat-main" id="chatMain">
+            <!-- Welcome Screen (shown when no conversation is selected) -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-content">
+                    <div class="welcome-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h2>Welcome to Shift Chat</h2>
+                    <p>Connect with employers and students on the platform</p>
+                    <button class="start-chat-btn" id="startChatBtn">
+                        <i class="fas fa-plus"></i>
+                        Start a New Conversation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Area (shown when conversation is selected) -->
+            <div class="chat-area" id="chatArea" style="display: none;">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <button class="back-btn" id="backBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="chat-user-info">
+                        <div class="chat-user-avatar">
+                            <img id="chatUserAvatar" src="https://via.placeholder.com/40x40/5a3e5d/ffffff?text=U" alt="User">
+                            <div class="online-indicator" id="chatUserOnline"></div>
+                        </div>
+                        <div class="chat-user-details">
+                            <h3 id="chatUserName">Select a conversation</h3>
+                            <span id="chatUserStatus" class="user-status">Click on a conversation to start chatting</span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="action-btn" id="callBtn" title="Voice Call">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                        <button class="action-btn" id="videoBtn" title="Video Call">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="action-btn" id="moreBtn" title="More Options">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div class="messages-container" id="messagesContainer">
+                    <div class="messages-list" id="messagesList">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        <div class="typing-avatar">
+                            <img src="https://via.placeholder.com/30x30/5a3e5d/ffffff?text=U" alt="User">
+                        </div>
+                        <div class="typing-animation">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-container">
+                    <div class="message-input-wrapper">
+                        <button class="attachment-btn" id="attachmentBtn" title="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <div class="input-field-wrapper">
+                            <textarea 
+                                id="messageInput" 
+                                placeholder="Type a message..." 
+                                rows="1"
+                                maxlength="1000"
+                            ></textarea>
+                            <button class="emoji-btn" id="emojiBtn" title="Add Emoji">
+                                <i class="fas fa-smile"></i>
+                            </button>
+                        </div>
+                        <button class="send-btn" id="sendBtn" title="Send Message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-actions" id="inputActions" style="display: none;">
+                        <span class="character-count" id="characterCount">0/1000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div class="modal-overlay" id="newChatModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Start New Conversation</h3>
+                <button class="modal-close" id="closeNewChatModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-users">
+                    <input type="text" id="userSearchInput" placeholder="Search users by name or email...">
+                    <button id="refreshUsersBtn" style="margin-top: 10px; background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        Refresh Users
+                    </button>
+                </div>
+                <div class="users-list" id="usersList">
+                    <!-- Available users will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Modal -->
+    <div class="modal-overlay" id="fileUploadModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Send File</h3>
+                <button class="modal-close" id="closeFileModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="file-upload-area" id="fileUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag and drop files here or click to browse</p>
+                    <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.txt">
+                </div>
+                <div class="file-preview" id="filePreview" style="display: none;">
+                    <!-- File preview will be shown here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelFileUpload">Cancel</button>
+                <button class="btn btn-primary" id="confirmFileUpload" disabled>Send File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <span>Loading...</span>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="chat.js"></script>
+</body>
+</html>

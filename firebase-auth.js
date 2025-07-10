@@ -1,0 +1,471 @@
+// Firebase Authentication Integration
+// Integrates Firebase Auth with existing signup/login forms
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    updateProfile
+} from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc,
+    collection,
+    query,
+    where,
+    getDocs
+} from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+    authDomain: "shift-3140e.firebaseapp.com",
+    databaseURL: "https://shift-3140e-default-rtdb.firebaseio.com",
+    projectId: "shift-3140e",
+    storageBucket: "shift-3140e.firebasestorage.app",
+    messagingSenderId: "716245939154",
+    appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+    measurementId: "G-F6WJ0T3E71"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Firebase Auth Manager
+class FirebaseAuthManager {
+    constructor() {
+        this.currentUser = null;
+        this.authCallbacks = [];
+        this.init();
+    }
+
+    init() {
+        // Listen for auth state changes
+        onAuthStateChanged(auth, async (user) => {
+            this.currentUser = user;
+            if (user) {
+                await this.syncUserData(user);
+            }
+            this.notifyAuthCallbacks(user);
+        });
+
+        // Initialize forms if they exist
+        this.initializeSignupForms();
+        this.initializeLoginForms();
+    }
+
+    // Initialize student signup form
+    initializeSignupForms() {
+        // Student signup form
+        const studentForm = document.getElementById('student-signup-form');
+        if (studentForm) {
+            console.log('Student signup form found, adding event listener');
+            studentForm.addEventListener('submit', (e) => this.handleStudentSignup(e));
+        }
+
+        // Employer signup form
+        const employerForm = document.getElementById('employer-signup-form');
+        if (employerForm) {
+            console.log('Employer signup form found, adding event listener');
+            employerForm.addEventListener('submit', (e) => this.handleEmployerSignup(e));
+        }
+    }
+
+    // Initialize login forms
+    initializeLoginForms() {
+        // Student login form
+        const studentLoginForm = document.getElementById('student-login-form');
+        if (studentLoginForm) {
+            console.log('Student login form found, adding event listener');
+            studentLoginForm.addEventListener('submit', (e) => this.handleStudentLogin(e));
+        }
+
+        // Employer login form
+        const employerLoginForm = document.getElementById('employer-signin-form');
+        if (employerLoginForm) {
+            console.log('Employer login form found, adding event listener');
+            employerLoginForm.addEventListener('submit', (e) => this.handleEmployerLogin(e));
+        }
+    }
+
+    // Handle student signup
+    async handleStudentSignup(e) {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const userData = {
+            fullName: formData.get('fullName'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            universityName: formData.get('universityName'),
+            yearOfStudy: parseInt(formData.get('yearOfStudy')),
+            department: formData.get('department'),
+            linkedinUrl: formData.get('linkedinUrl'),
+            userType: 'student'
+            // Note: File uploads (studentId, profilePicture) are excluded from Firestore
+            // In a real app, these would be uploaded to Firebase Storage separately
+        };
+
+        console.log('Student signup data:', userData);
+
+        try {
+            await this.registerUser(userData);
+        } catch (error) {
+            console.error('Student signup error:', error);
+            alert('Signup failed: ' + error.message);
+        }
+    }
+
+    // Handle employer signup
+    async handleEmployerSignup(e) {
+        e.preventDefault();
+
+        // Get values directly from form elements
+        const userData = {
+            name: document.getElementById('employer-name')?.value,
+            email: document.getElementById('employer-email')?.value,
+            password: document.getElementById('employer-password')?.value,
+            phone: document.getElementById('employer-phone')?.value,
+            companyType: document.getElementById('employer-type')?.value,
+            registrationNumber: document.getElementById('employer-reg')?.value,
+            userType: 'employer'
+        };
+
+        console.log('Employer signup data:', userData);
+
+        try {
+            await this.registerUser(userData);
+        } catch (error) {
+            console.error('Employer signup error:', error);
+            alert('Signup failed: ' + error.message);
+        }
+    }
+
+    // Handle student login
+    async handleStudentLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('student-email')?.value || 
+                     document.querySelector('input[type="email"]')?.value;
+        const password = document.getElementById('student-password')?.value || 
+                        document.querySelector('input[type="password"]')?.value;
+
+        try {
+            await this.loginUser(email, password);
+        } catch (error) {
+            console.error('Student login error:', error);
+            alert('Login failed: ' + error.message);
+        }
+    }
+
+    // Handle employer login
+    async handleEmployerLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('employer-email')?.value;
+        const password = document.getElementById('employer-password')?.value;
+
+        try {
+            await this.loginUser(email, password);
+        } catch (error) {
+            console.error('Employer login error:', error);
+            alert('Login failed: ' + error.message);
+        }
+    }
+
+    // Register new user
+    async registerUser(userData) {
+        try {
+            // Show loading
+            this.showLoading('Creating account...');
+
+            // Create Firebase user
+            const userCredential = await createUserWithEmailAndPassword(
+                auth, 
+                userData.email, 
+                userData.password
+            );
+
+            // Update profile
+            await updateProfile(userCredential.user, {
+                displayName: userData.fullName || userData.name
+            });
+
+            // Create user document in Firestore
+            await this.createUserDocument(userCredential.user, userData);
+
+            // Store in localStorage for compatibility
+            this.updateLocalStorage(userData);
+
+            this.hideLoading();
+            alert('Account created successfully! Welcome to Shift.');
+
+            // Redirect based on user type
+            if (userData.userType === 'student') {
+                window.location.href = 'job-listing.html';
+            } else {
+                window.location.href = 'employer-profile.html';
+            }
+
+        } catch (error) {
+            this.hideLoading();
+            throw error;
+        }
+    }
+
+    // Login user
+    async loginUser(email, password) {
+        try {
+            this.showLoading('Signing in...');
+
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            
+            // Get user data from Firestore
+            const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+            
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                this.updateLocalStorage(userData);
+                
+                this.hideLoading();
+                alert(`Welcome back, ${userData.name || userData.fullName}!`);
+
+                // Redirect based on user type
+                if (userData.userType === 'student') {
+                    window.location.href = 'job-listing.html';
+                } else {
+                    window.location.href = 'employer-profile.html';
+                }
+            } else {
+                throw new Error('User profile not found');
+            }
+
+        } catch (error) {
+            this.hideLoading();
+            throw error;
+        }
+    }
+
+    // Create user document in Firestore
+    async createUserDocument(firebaseUser, userData) {
+        // Helper function to check if value is safe for Firestore
+        const isSafeValue = (value) => {
+            return value !== undefined &&
+                   value !== null &&
+                   typeof value !== 'object' ||
+                   value instanceof Date ||
+                   Array.isArray(value);
+        };
+
+        const userProfile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: userData.fullName || userData.name,
+            userType: userData.userType,
+
+            // Chat fields
+            isOnline: true,
+            lastSeen: new Date(),
+            profilePicture: this.generateAvatarUrl(userData.fullName || userData.name),
+
+            // Metadata
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        // Add student-specific fields only if they exist and are safe
+        if (userData.userType === 'student') {
+            if (userData.universityName && isSafeValue(userData.universityName)) {
+                userProfile.university = userData.universityName;
+            }
+            if (userData.yearOfStudy && isSafeValue(userData.yearOfStudy)) {
+                userProfile.yearOfStudy = userData.yearOfStudy;
+            }
+            if (userData.department && isSafeValue(userData.department)) {
+                userProfile.department = userData.department;
+            }
+            if (userData.linkedinUrl && isSafeValue(userData.linkedinUrl)) {
+                userProfile.linkedinUrl = userData.linkedinUrl;
+            }
+            // Note: File fields like studentId are intentionally excluded
+        }
+
+        // Add employer-specific fields only if they exist and are safe
+        if (userData.userType === 'employer') {
+            if (userData.name && isSafeValue(userData.name)) {
+                userProfile.companyName = userData.name;
+            }
+            if (userData.companyType && isSafeValue(userData.companyType)) {
+                userProfile.companyType = userData.companyType;
+            }
+            if (userData.phone && isSafeValue(userData.phone)) {
+                userProfile.phone = userData.phone;
+            }
+            if (userData.registrationNumber && isSafeValue(userData.registrationNumber)) {
+                userProfile.registrationNumber = userData.registrationNumber;
+            }
+        }
+
+        console.log('Creating user profile:', userProfile);
+        await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
+        return userProfile;
+    }
+
+    // Generate avatar URL
+    generateAvatarUrl(name) {
+        const initial = name ? name.charAt(0).toUpperCase() : 'U';
+        const colors = ['d17e7e', '5a3e5d', '8c6c8e', '4a3249'];
+        const colorIndex = name ? name.length % colors.length : 0;
+        const color = colors[colorIndex];
+        
+        return `https://via.placeholder.com/100x100/${color}/ffffff?text=${initial}`;
+    }
+
+    // Update localStorage for compatibility
+    updateLocalStorage(userData) {
+        const localData = {
+            name: userData.fullName || userData.name,
+            email: userData.email,
+            userType: userData.userType,
+            university: userData.universityName || userData.university,
+            yearOfStudy: userData.yearOfStudy,
+            department: userData.department,
+            linkedinUrl: userData.linkedinUrl,
+            firebaseUid: this.currentUser?.uid
+        };
+
+        localStorage.setItem('currentUser', JSON.stringify(localData));
+    }
+
+    // Sync user data
+    async syncUserData(user) {
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                this.updateLocalStorage(userData);
+            }
+        } catch (error) {
+            console.error('Error syncing user data:', error);
+        }
+    }
+
+    // Get all users for chat
+    async getAllUsers() {
+        try {
+            const usersRef = collection(db, 'users');
+            const snapshot = await getDocs(usersRef);
+            
+            const users = [];
+            snapshot.forEach((doc) => {
+                const userData = doc.data();
+                if (doc.id !== this.currentUser?.uid) {
+                    users.push({
+                        id: doc.id,
+                        ...userData
+                    });
+                }
+            });
+            
+            return users;
+        } catch (error) {
+            console.error('Error getting users:', error);
+            return [];
+        }
+    }
+
+    // Sign out
+    async signOutUser() {
+        try {
+            await signOut(auth);
+            localStorage.removeItem('currentUser');
+            window.location.href = 'landing.html';
+        } catch (error) {
+            console.error('Sign out error:', error);
+        }
+    }
+
+    // Auth state callbacks
+    onAuthStateChange(callback) {
+        this.authCallbacks.push(callback);
+        if (this.currentUser) {
+            callback(this.currentUser);
+        }
+    }
+
+    notifyAuthCallbacks(user) {
+        this.authCallbacks.forEach(callback => {
+            try {
+                callback(user);
+            } catch (error) {
+                console.error('Auth callback error:', error);
+            }
+        });
+    }
+
+    // UI helpers
+    showLoading(message = 'Loading...') {
+        let loader = document.getElementById('auth-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'auth-loader';
+            loader.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.9);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+            loader.innerHTML = `
+                <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #d17e7e; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
+                <div style="color: #333; font-size: 16px;">${message}</div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            document.body.appendChild(loader);
+        }
+        loader.style.display = 'flex';
+    }
+
+    hideLoading() {
+        const loader = document.getElementById('auth-loader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
+
+    // Get current user
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    // Check if authenticated
+    isAuthenticated() {
+        return this.currentUser !== null;
+    }
+}
+
+// Create global instance
+const firebaseAuth = new FirebaseAuthManager();
+
+// Export for use in other modules
+export default firebaseAuth;
+window.firebaseAuth = firebaseAuth;

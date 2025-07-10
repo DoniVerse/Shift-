@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('loginForm');
+    const form = document.getElementById('student-login-form');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
 
@@ -52,62 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        let isValid = true;
-
-        // Clear previous errors
-        clearError(emailInput);
-        clearError(passwordInput);
-
-        // Validate email
-        if (!email) {
-            showError(emailInput, 'Email is required');
-            isValid = false;
-        } else if (!validateEmail(email)) {
-            showError(emailInput, 'Please enter a valid email address');
-            isValid = false;
-        }
-
-        // Validate password
-        if (!password) {
-            showError(passwordInput, 'Password is required');
-            isValid = false;
-        } else if (password.length < 6) {
-            showError(passwordInput, 'Password must be at least 6 characters');
-            isValid = false;
-        }
-
-        if (isValid) {
-            // Show loading state
-            const submitBtn = form.querySelector('.signin-btn');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Signing In...';
-            submitBtn.disabled = true;
-
-            // Simulate API call
-            setTimeout(() => {
-                // Here you would typically send the data to your server
-                console.log('Login attempt:', { email, password });
-                
-                // For demo purposes, let's simulate a successful login
-                if (email === 'demo@example.com' && password === 'password') {
-                    alert('Login successful! Welcome back.');
-                    // Redirect to dashboard
-                    // window.location.href = 'dashboard.html';
-                } else {
-                    // Simulate login failure
-                    showError(passwordInput, 'Invalid email or password');
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                }
-            }, 1500);
-        }
-    });
+    // Form submission is now handled by Firebase Auth (firebase-auth.js)
+    // The old form submission code has been removed to prevent conflicts
 
     // Google sign in button
     document.querySelector('.google-btn').addEventListener('click', function() {

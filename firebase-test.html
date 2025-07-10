@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Chat Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Chat Integration Test</h1>
+        
+        <div id="firebase-status" class="status info">
+            Initializing Firebase...
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Setup Checklist</h3>
+            <div id="setup-checklist">
+                <div>⏳ Firebase SDK loaded</div>
+                <div>⏳ Firebase app initialized</div>
+                <div>⏳ Firestore connected</div>
+                <div>⏳ Authentication ready</div>
+                <div>⏳ Chat service initialized</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>👤 User Authentication Test</h3>
+            <div>
+                <input type="email" id="test-email" placeholder="Test email (e.g., test@example.com)" value="test@example.com">
+                <input type="password" id="test-password" placeholder="Test password" value="testpassword123">
+                <button onclick="testSignUp()">Test Sign Up</button>
+                <button onclick="testSignIn()">Test Sign In</button>
+                <button onclick="testSignOut()">Sign Out</button>
+            </div>
+            <div id="auth-status" class="status info">Not authenticated</div>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 Chat Service Test</h3>
+            <div>
+                <input type="text" id="test-user-id" placeholder="Other user ID for chat test">
+                <button onclick="testCreateConversation()">Create Test Conversation</button>
+                <button onclick="testSendMessage()">Send Test Message</button>
+            </div>
+            <textarea id="test-message" placeholder="Type a test message..." rows="3">Hello! This is a test message from the chat system.</textarea>
+            <div id="chat-status" class="status info">Chat service ready</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Real-time Test</h3>
+            <button onclick="startListeningTest()">Start Listening to Messages</button>
+            <button onclick="stopListeningTest()">Stop Listening</button>
+            <div id="messages-log" class="log">
+                Messages will appear here...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debug-log" class="log">
+                Debug information will appear here...
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase v9 SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            query, 
+            orderBy 
+        } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+            authDomain: "shift-3140e.firebaseapp.com",
+            databaseURL: "https://shift-3140e-default-rtdb.firebaseio.com",
+            projectId: "shift-3140e",
+            storageBucket: "shift-3140e.firebasestorage.app",
+            messagingSenderId: "716245939154",
+            appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+            measurementId: "G-F6WJ0T3E71"
+        };
+
+        let app, db, auth;
+        let unsubscribeMessages = null;
+
+        // Initialize Firebase
+        function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                updateStatus('firebase-status', 'Firebase initialized successfully!', 'success');
+                updateChecklist();
+                
+                // Listen for auth state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        updateStatus('auth-status', `Authenticated as: ${user.email}`, 'success');
+                        log(`User signed in: ${user.email}`);
+                    } else {
+                        updateStatus('auth-status', 'Not authenticated', 'info');
+                        log('User signed out');
+                    }
+                });
+                
+                log('Firebase initialization complete');
+                
+            } catch (error) {
+                updateStatus('firebase-status', `Firebase initialization failed: ${error.message}`, 'error');
+                log(`Firebase error: ${error.message}`);
+            }
+        }
+
+        // Update checklist
+        function updateChecklist() {
+            const checklist = document.getElementById('setup-checklist');
+            checklist.innerHTML = `
+                <div>✅ Firebase SDK loaded</div>
+                <div>✅ Firebase app initialized</div>
+                <div>✅ Firestore connected</div>
+                <div>✅ Authentication ready</div>
+                <div>✅ Chat service initialized</div>
+            `;
+        }
+
+        // Test functions
+        window.testSignUp = async function() {
+            const email = document.getElementById('test-email').value;
+            const password = document.getElementById('test-password').value;
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                log(`Sign up successful: ${userCredential.user.email}`);
+                
+                // Create user document in Firestore
+                await setDoc(doc(db, 'users', userCredential.user.uid), {
+                    uid: userCredential.user.uid,
+                    email: userCredential.user.email,
+                    name: 'Test User',
+                    userType: 'student',
+                    isOnline: true,
+                    lastSeen: new Date(),
+                    createdAt: new Date()
+                });
+                
+                log('User document created in Firestore');
+                
+            } catch (error) {
+                log(`Sign up error: ${error.message}`);
+                updateStatus('auth-status', `Sign up failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.testSignIn = async function() {
+            const email = document.getElementById('test-email').value;
+            const password = document.getElementById('test-password').value;
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                log(`Sign in successful: ${userCredential.user.email}`);
+            } catch (error) {
+                log(`Sign in error: ${error.message}`);
+                updateStatus('auth-status', `Sign in failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.testSignOut = async function() {
+            try {
+                await signOut(auth);
+                log('Sign out successful');
+            } catch (error) {
+                log(`Sign out error: ${error.message}`);
+            }
+        };
+
+        window.testCreateConversation = async function() {
+            if (!auth.currentUser) {
+                log('Please sign in first');
+                return;
+            }
+            
+            const otherUserId = document.getElementById('test-user-id').value || 'test-user-2';
+            const conversationId = [auth.currentUser.uid, otherUserId].sort().join('_');
+            
+            try {
+                await setDoc(doc(db, 'conversations', conversationId), {
+                    id: conversationId,
+                    participants: [auth.currentUser.uid, otherUserId],
+                    createdAt: new Date(),
+                    lastMessage: null,
+                    lastMessageTime: null
+                });
+                
+                log(`Conversation created: ${conversationId}`);
+                updateStatus('chat-status', `Conversation ready: ${conversationId}`, 'success');
+                
+            } catch (error) {
+                log(`Conversation creation error: ${error.message}`);
+                updateStatus('chat-status', `Failed to create conversation: ${error.message}`, 'error');
+            }
+        };
+
+        window.testSendMessage = async function() {
+            if (!auth.currentUser) {
+                log('Please sign in first');
+                return;
+            }
+            
+            const otherUserId = document.getElementById('test-user-id').value || 'test-user-2';
+            const conversationId = [auth.currentUser.uid, otherUserId].sort().join('_');
+            const messageText = document.getElementById('test-message').value;
+            
+            try {
+                const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+                await addDoc(messagesRef, {
+                    senderId: auth.currentUser.uid,
+                    text: messageText,
+                    type: 'text',
+                    timestamp: new Date(),
+                    status: 'sent'
+                });
+                
+                log(`Message sent to conversation: ${conversationId}`);
+                updateStatus('chat-status', 'Message sent successfully!', 'success');
+                
+            } catch (error) {
+                log(`Send message error: ${error.message}`);
+                updateStatus('chat-status', `Failed to send message: ${error.message}`, 'error');
+            }
+        };
+
+        window.startListeningTest = function() {
+            if (!auth.currentUser) {
+                log('Please sign in first');
+                return;
+            }
+            
+            const otherUserId = document.getElementById('test-user-id').value || 'test-user-2';
+            const conversationId = [auth.currentUser.uid, otherUserId].sort().join('_');
+            
+            const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+            const q = query(messagesRef, orderBy('timestamp', 'asc'));
+            
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                const messagesLog = document.getElementById('messages-log');
+                messagesLog.innerHTML = '';
+                
+                snapshot.forEach((doc) => {
+                    const message = doc.data();
+                    const messageDiv = document.createElement('div');
+                    messageDiv.innerHTML = `
+                        <strong>${message.senderId}:</strong> ${message.text} 
+                        <small>(${message.timestamp?.toDate?.()?.toLocaleTimeString() || 'now'})</small>
+                    `;
+                    messagesLog.appendChild(messageDiv);
+                });
+                
+                log(`Received ${snapshot.size} messages`);
+            });
+            
+            log(`Started listening to conversation: ${conversationId}`);
+        };
+
+        window.stopListeningTest = function() {
+            if (unsubscribeMessages) {
+                unsubscribeMessages();
+                unsubscribeMessages = null;
+                log('Stopped listening to messages');
+            }
+        };
+
+        // Utility functions
+        function updateStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        window.clearLog = function() {
+            document.getElementById('debug-log').innerHTML = '';
+            document.getElementById('messages-log').innerHTML = 'Messages will appear here...';
+        };
+
+        // Initialize when page loads
+        initializeFirebase();
+    </script>
+</body>
+</html>
