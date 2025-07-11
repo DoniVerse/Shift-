@@ -206,6 +206,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="job-description">${job.description}</div>
                 <div class="job-employer">${job.employerName ? `<strong>Employer:</strong> ${job.employerName}` : ''}</div>
             `;
+            // Show job details modal on click
+            jobCard.onclick = () => showJobModal(job);
             jobsGrid.appendChild(jobCard);
         });
     }
@@ -278,6 +280,135 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+    }
+
+    // Helper to show job details modal
+    function showJobModal(job) {
+        // Create modal overlay
+        let modal = document.getElementById('jobDetailsModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'jobDetailsModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100vw';
+            modal.style.height = '100vh';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '9999';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `
+            <div style="background:#fff;max-width:400px;width:90vw;padding:24px 20px 20px 20px;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.15);position:relative;">
+                <button id="closeJobModal" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+                <h2 style="margin-bottom:10px;">${job.title}</h2>
+                <div style="margin-bottom:8px;"><strong>Category:</strong> ${job.categoryTitle || job.category || ''}</div>
+                <div style="margin-bottom:8px;"><strong>Employer:</strong> ${job.employerName || 'N/A'}</div>
+                <div style="margin-bottom:8px;"><strong>Payment:</strong> ${job.paymentCode || ''}</div>
+                <div style="margin-bottom:16px;"><strong>Description:</strong><br>${job.description || ''}</div>
+                <button id="applyJobBtn" style="width:100%;padding:10px 0;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:1rem;cursor:pointer;">Apply</button>
+            </div>
+        `;
+        // Close modal
+        document.getElementById('closeJobModal').onclick = function() {
+            modal.style.display = 'none';
+        };
+        // Apply button
+        document.getElementById('applyJobBtn').onclick = function() {
+            // Save application to localStorage (optional)
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            applications.push({
+                jobTitle: job.title,
+                company: job.employerName || '',
+                dateApplied: new Date().toLocaleDateString(),
+                status: 'Applied',
+                student: user.email || ''
+            });
+            localStorage.setItem('jobApplications', JSON.stringify(applications));
+            alert('Application submitted!');
+            modal.style.display = 'none';
+        };
+        modal.style.display = 'flex';
+    }
+
+    // Student notifications modal logic
+    const notificationsNav = document.getElementById('studentNotificationsNav');
+    const notificationsModal = document.getElementById('studentNotificationsModal');
+    if (notificationsNav) {
+        notificationsNav.onclick = function(e) {
+            e.preventDefault();
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            const notifications = JSON.parse(localStorage.getItem('studentNotifications') || '[]');
+            // Get all jobs this student applied to
+            const myApps = applications.filter(app => app.student === user.email);
+            if (!myApps.length) {
+                notificationsModal.innerHTML = `<div style='background:#fff;padding:24px 20px 20px 20px;border-radius:12px;max-width:400px;width:90vw;position:relative;'><button id='closeStudentNotificationsModal' style='position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;'>&times;</button><h2>My Applications</h2><div>No job applications yet.</div></div>`;
+                notificationsModal.style.display = 'flex';
+                document.getElementById('closeStudentNotificationsModal').onclick = function() { notificationsModal.style.display = 'none'; };
+                return;
+            }
+            let html = `<div style='background:#fff;padding:24px 20px 20px 20px;border-radius:12px;max-width:400px;width:90vw;position:relative;'><button id='closeStudentNotificationsModal' style='position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;'>&times;</button><h2>My Applications</h2>`;
+            myApps.forEach((app, idx) => {
+                // Check if accepted
+                const accepted = notifications.find(n => n.email === user.email && n.message.includes(app.jobTitle));
+                let status = 'Pending';
+                let timerHtml = '';
+                let canStart = false;
+                let expireKey = `expire_${user.email}_${app.jobTitle}`;
+                if (accepted) {
+                    status = 'Accepted';
+                    // Timer logic
+                    let expireTime = localStorage.getItem(expireKey);
+                    if (!expireTime) {
+                        expireTime = Date.now() + 30 * 60 * 1000; // 30 minutes from now
+                        localStorage.setItem(expireKey, expireTime);
+                    }
+                    const now = Date.now();
+                    const msLeft = expireTime - now;
+                    if (msLeft <= 0) {
+                        // Remove job from applications
+                        const newApps = myApps.filter((_, i) => i !== idx);
+                        localStorage.setItem('jobApplications', JSON.stringify(newApps));
+                        localStorage.removeItem(expireKey);
+                        return; // Skip rendering this job
+                    } else {
+                        const min = Math.floor(msLeft / 60000);
+                        const sec = Math.floor((msLeft % 60000) / 1000);
+                        timerHtml = `<div style='color:#f59e42;margin-bottom:8px;'>Accept within: ${min}m ${sec}s</div>`;
+                        canStart = true;
+                    }
+                }
+                html += `<div class='student-app-card' style='border:1px solid #e1e5e9;border-radius:8px;padding:12px;margin-bottom:12px;'>
+                    <div><strong>Job:</strong> ${app.jobTitle}</div>
+                    <div><strong>Status:</strong> <span style='color:${status==='Accepted'?'#22c55e':'#f59e42'};'>${status}</span></div>
+                    ${timerHtml}
+                    ${canStart ? `<button class='agreeStartBtn' data-idx='${idx}' style='width:100%;padding:10px 0;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:1rem;cursor:pointer;margin-top:8px;'>Agree & Start Job</button>` : ''}
+                </div>`;
+            });
+            html += `</div>`;
+            notificationsModal.innerHTML = html;
+            notificationsModal.style.display = 'flex';
+            document.getElementById('closeStudentNotificationsModal').onclick = function() { notificationsModal.style.display = 'none'; };
+            // Agree & Start Job button logic
+            notificationsModal.querySelectorAll('.agreeStartBtn').forEach(btn => {
+                btn.onclick = function() {
+                    const idx = this.getAttribute('data-idx');
+                    // Remove job from applications and timer
+                    const newApps = myApps.filter((_, i) => i !== parseInt(idx));
+                    localStorage.setItem('jobApplications', JSON.stringify(newApps));
+                    const app = myApps[idx];
+                    let expireKey = `expire_${user.email}_${app.jobTitle}`;
+                    localStorage.removeItem(expireKey);
+                    alert('You have agreed to start the job!');
+                    notificationsModal.style.display = 'none';
+                };
+            });
+        };
     }
 
     // Initialize the page

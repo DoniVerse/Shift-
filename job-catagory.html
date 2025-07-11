@@ -72,7 +72,7 @@
                             <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 18.9078 6.11683 18.7563 6.96353C18.6047 7.81023 18.1147 8.58044 17.3789 9.10338C16.6431 9.62632 15.7556 9.86614 14.8889 9.7859" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3 class="card-title">Corporate Legal Advisory Support</h3>
+                    <h3 class="card-title">Legal Research Assistance</h3>
                     <div class="card-rating">
                         <div class="stars">
                             <span class="star filled">★</span>
@@ -93,7 +93,7 @@
                             <path d="M13.5 16.5L15.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3 class="card-title">Legal Research Assistance</h3>
+                    <h3 class="card-title">preparing Legal fillings and case documents</h3>
                     <div class="card-rating">
                         <div class="stars">
                             <span class="star filled">★</span>
@@ -128,7 +128,15 @@
                 </svg>
                 <span>Profile</span>
             </a>
+            <!-- Applications nav item -->
+            <a href="#" class="nav-item" id="applicationsNav">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Applications</span>
+            </a>
         </div>
+        <div id="applicationsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;"></div>
     </div>
 
     <script type="module">
@@ -202,5 +210,72 @@
     <!-- Chat Integration -->
     <script src="chat-integration-widget.js"></script>
     <script src="chat-buttons.js"></script>
+    <script>
+document.getElementById('applicationsNav').onclick = function(e) {
+    e.preventDefault();
+    const employer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+    const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+    const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+    // Find jobs posted by this employer
+    const myJobs = jobs.filter(job => job.employerEmail === employer.email);
+    // Find applications for these jobs
+    const myJobTitles = myJobs.map(j => j.title);
+    const myApplications = applications.filter(app => myJobTitles.includes(app.jobTitle));
+    const modal = document.getElementById('applicationsModal');
+    if (!myApplications.length) {
+        modal.innerHTML = `<div style='background:#fff;padding:24px 20px 20px 20px;border-radius:12px;max-width:400px;width:90vw;position:relative;'><button id='closeApplicationsModal' style='position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;'>&times;</button><h2>Applications</h2><div>No applications yet.</div></div>`;
+        modal.style.display = 'flex';
+        document.getElementById('closeApplicationsModal').onclick = function() { modal.style.display = 'none'; };
+        return;
+    }
+    let html = `<div style='background:#fff;padding:24px 20px 20px 20px;border-radius:12px;max-width:400px;width:90vw;position:relative;'><button id='closeApplicationsModal' style='position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;'>&times;</button><h2>Applications</h2>`;
+    myApplications.forEach((app, idx) => {
+        html += `<div class='application-card' style='border:1px solid #e1e5e9;border-radius:8px;padding:12px;margin-bottom:12px;cursor:pointer;' data-idx='${idx}'>
+            <div><strong>Job:</strong> ${app.jobTitle}</div>
+            <div><strong>Student:</strong> ${app.student}</div>
+            <div><strong>Date:</strong> ${app.dateApplied}</div>
+            <div><strong>Status:</strong> ${app.status}</div>
+        </div>`;
+    });
+    html += `</div>`;
+    modal.innerHTML = html;
+    modal.style.display = 'flex';
+    document.getElementById('closeApplicationsModal').onclick = function() { modal.style.display = 'none'; };
+    // Add click handler for each application card
+    modal.querySelectorAll('.application-card').forEach(card => {
+        card.onclick = function() {
+            const idx = this.getAttribute('data-idx');
+            const app = myApplications[idx];
+            // Get student info
+            const students = [JSON.parse(localStorage.getItem('currentUser') || '{}')];
+            const student = students.find(s => s.email === app.student) || {};
+            const resume = JSON.parse(localStorage.getItem('resumeData') || '{}');
+            const education = JSON.parse(localStorage.getItem('educationData') || '{}');
+            let details = `<div style='background:#fff;padding:24px 20px 20px 20px;border-radius:12px;max-width:400px;width:90vw;position:relative;'><button id='closeStudentModal' style='position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;cursor:pointer;'>&times;</button><h2>Student Info</h2>`;
+            details += `<div><strong>Name:</strong> ${student.name || app.student}</div>`;
+            details += `<div><strong>Year of Study:</strong> ${student.yearOfStudy || ''}</div>`;
+            if (resume.fileName) details += `<div><strong>Resume/CV:</strong> ${resume.fileName}</div>`;
+            if (education.gpa) details += `<div><strong>GPA:</strong> ${education.gpa}</div>`;
+            if (education.graduationDate) details += `<div><strong>Expected Graduation:</strong> ${education.graduationDate}</div>`;
+            details += `<button id='acceptStudentBtn' style='width:100%;padding:10px 0;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:1rem;cursor:pointer;margin-top:16px;'>Accept</button>`;
+            details += `</div>`;
+            modal.innerHTML = details;
+            document.getElementById('closeStudentModal').onclick = function() { modal.style.display = 'none'; };
+            document.getElementById('acceptStudentBtn').onclick = function() {
+                // Store notification for student
+                const notifications = JSON.parse(localStorage.getItem('studentNotifications') || '[]');
+                notifications.push({
+                    email: app.student,
+                    message: `You have been accepted for the job: ${app.jobTitle}`,
+                    date: new Date().toLocaleString()
+                });
+                localStorage.setItem('studentNotifications', JSON.stringify(notifications));
+                alert('Student accepted and notified!');
+                modal.style.display = 'none';
+            };
+        };
+    });
+};
+</script>
 </body>
 </html>

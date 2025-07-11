@@ -19,6 +19,8 @@
                     <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
                 </div>
                 <h1 class="profile-name" id="profileName">Student Name</h1>
+                <!-- Logout button -->
+                <button id="student-logout-btn" style="margin-top: 24px; width: 100%; padding: 10px 0; background: #dc2626; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Logout</button>
             </div>
             
             <div class="profile-menu">
@@ -51,12 +53,6 @@
                     <div class="menu-text">Job Application History</div>
                     <div class="menu-arrow">›</div>
                 </div>
-                
-                <div class="menu-item" data-section="settings">
-                    <div class="menu-icon">⚙️</div>
-                    <div class="menu-text">Settings</div>
-                    <div class="menu-arrow">›</div>
-                </div>
             </div>
         </div>
     </div>
@@ -75,6 +71,31 @@
     </div>
 
     <script src="student-profile.js"></script>
+    <script>
+    // Show uploaded profile picture if available
+    document.addEventListener('DOMContentLoaded', function() {
+        const profilePicture = document.getElementById('profilePicture');
+        const savedProfilePic = localStorage.getItem('profilePicture');
+        if (savedProfilePic) {
+            const img = document.createElement('img');
+            img.src = savedProfilePic;
+            img.style.maxWidth = '80px';
+            img.style.maxHeight = '80px';
+            img.style.borderRadius = '50%';
+            profilePicture.innerHTML = '';
+            profilePicture.appendChild(img);
+        }
+        // Logout logic
+        const logoutBtn = document.getElementById('student-logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('profilePicture');
+                window.location.href = 'studentlogin.html';
+            });
+        }
+    });
+    </script>
     <!-- Chat Widget Integration -->
     <script src="chat-integration-widget.js"></script>
 </body>

@@ -194,33 +194,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</div>';
             return html;
-        },
-        
-        settings: function() {
-            return `
-                <div class="settings-list">
-                    <div class="menu-item" onclick="changePassword()">
-                        <div class="menu-icon">🔒</div>
-                        <div class="menu-text">Change Password</div>
-                        <div class="menu-arrow">›</div>
-                    </div>
-                    <div class="menu-item" onclick="notificationSettings()">
-                        <div class="menu-icon">🔔</div>
-                        <div class="menu-text">Notification Settings</div>
-                        <div class="menu-arrow">›</div>
-                    </div>
-                    <div class="menu-item" onclick="privacySettings()">
-                        <div class="menu-icon">🛡️</div>
-                        <div class="menu-text">Privacy Settings</div>
-                        <div class="menu-arrow">›</div>
-                    </div>
-                    <div class="menu-item" onclick="deleteAccount()" style="color: #e74c3c;">
-                        <div class="menu-icon">🗑️</div>
-                        <div class="menu-text">Delete Account</div>
-                        <div class="menu-arrow">›</div>
-                    </div>
-                </div>
-            `;
         }
     };
 
@@ -233,8 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 resume: 'Resume/CV',
                 skills: 'Skills and Experience',
                 education: 'Education Details',
-                applications: 'Job Application History',
-                settings: 'Settings'
+                applications: 'Job Application History'
             };
             
             modalTitle.textContent = titles[section];
