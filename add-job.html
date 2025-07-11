@@ -43,7 +43,10 @@
                             <label for="payment-code">Payment amount</label>
                             <input type="text" id="payment-code" placeholder="e.g., ETB 200" required>
                         </div>
-                        
+                        <div class="form-group half">
+                            <label for="expected-hours">Expected Hours to Finish</label>
+                            <input type="number" id="expected-hours" placeholder="e.g., 4" min="1" required>
+                        </div>
                     </div>
                 </div>
 
@@ -94,18 +97,20 @@
             const jobTitle = document.getElementById('job-title').value;
             const jobDescription = document.getElementById('job-description').value;
             const paymentCode = document.getElementById('payment-code').value;
+            const expectedHours = document.getElementById('expected-hours').value;
             // Get category from URL
             const urlParams = new URLSearchParams(window.location.search);
             const category = urlParams.get('category') || '';
             const categoryTitle = urlParams.get('title') || '';
             // Get employer info
             const employer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
-            if (jobTitle && jobDescription && paymentCode && category) {
+            if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
                 // Build job object
                 const job = {
                     title: jobTitle,
                     description: jobDescription,
                     paymentCode: paymentCode,
+                    expectedHours: expectedHours,
                     category: category,
                     categoryTitle: categoryTitle,
                     employerName: employer.name || '',

@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="job-rating">${job.rating ? createStarRating(job.rating) : ''}</div>
                 <div class="job-description">${job.description}</div>
                 <div class="job-employer">${job.employerName ? `<strong>Employer:</strong> ${job.employerName}` : ''}</div>
+                <div class="job-hours">${job.expectedHours ? `<strong>Expected Hours:</strong> ${job.expectedHours}` : ''}</div>
             `;
             // Show job details modal on click
             jobCard.onclick = () => showJobModal(job);
@@ -308,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="margin-bottom:8px;"><strong>Category:</strong> ${job.categoryTitle || job.category || ''}</div>
                 <div style="margin-bottom:8px;"><strong>Employer:</strong> ${job.employerName || 'N/A'}</div>
                 <div style="margin-bottom:8px;"><strong>Payment:</strong> ${job.paymentCode || ''}</div>
+                <div style="margin-bottom:8px;"><strong>Expected Hours:</strong> ${job.expectedHours || ''}</div>
                 <div style="margin-bottom:16px;"><strong>Description:</strong><br>${job.description || ''}</div>
                 <button id="applyJobBtn" style="width:100%;padding:10px 0;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:1rem;cursor:pointer;">Apply</button>
             </div>
