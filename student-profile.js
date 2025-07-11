@@ -259,40 +259,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Save form data to localStorage
     function saveFormData(section, form) {
+        const userData = JSON.parse(localStorage.getItem('currentUser')) || {};
+        if (userData.userType !== 'student') {
+            alert('Only authenticated students can edit this information.');
+            return;
+        }
         const formData = new FormData(form);
         let data = {};
-        
+        let error = '';
         switch(section) {
             case 'resume':
-                data = {
-                    summary: document.getElementById('resumeSummary').value,
-                    fileName: document.getElementById('resumeFile').files[0]?.name || JSON.parse(localStorage.getItem('resumeData') || '{}').fileName
-                };
-                localStorage.setItem('resumeData', JSON.stringify(data));
+                const summary = document.getElementById('resumeSummary').value.trim();
+                const fileInput = document.getElementById('resumeFile');
+                const fileName = fileInput.files[0]?.name || JSON.parse(localStorage.getItem('resumeData') || '{}').fileName;
+                if (!summary || !fileName) {
+                    error = 'All fields are required (including uploading your resume/CV).';
+                } else {
+                    data = { summary, fileName };
+                    localStorage.setItem('resumeData', JSON.stringify(data));
+                }
                 break;
-                
             case 'skills':
-                data = {
-                    skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
-                    experience: document.getElementById('experience').value.split('\n\n').filter(s => s.trim()),
-                    certifications: document.getElementById('certifications').value
-                };
-                localStorage.setItem('skillsData', JSON.stringify(data));
+                const skills = document.getElementById('skills').value.trim();
+                const experience = document.getElementById('experience').value.trim();
+                const certifications = document.getElementById('certifications').value.trim();
+                if (!skills || !experience || !certifications) {
+                    error = 'All fields are required.';
+                } else {
+                    data = {
+                        skills: skills.split(',').map(s => s.trim()).filter(s => s),
+                        experience: experience.split('\n\n').filter(s => s.trim()),
+                        certifications
+                    };
+                    localStorage.setItem('skillsData', JSON.stringify(data));
+                }
                 break;
-                
             case 'education':
-                data = {
-                    gpa: document.getElementById('gpa').value,
-                    graduationDate: document.getElementById('graduationDate').value,
-                    relevantCourses: document.getElementById('relevantCourses').value,
-                    achievements: document.getElementById('achievements').value
-                };
-                localStorage.setItem('educationData', JSON.stringify(data));
+                const gpa = document.getElementById('gpa').value.trim();
+                const graduationDate = document.getElementById('graduationDate').value.trim();
+                const relevantCourses = document.getElementById('relevantCourses').value.trim();
+                const achievements = document.getElementById('achievements').value.trim();
+                if (!gpa || !graduationDate || !relevantCourses || !achievements) {
+                    error = 'All fields are required.';
+                } else {
+                    data = { gpa, graduationDate, relevantCourses, achievements };
+                    localStorage.setItem('educationData', JSON.stringify(data));
+                }
                 break;
         }
-        
+        if (error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = '#dc2626';
+            errorDiv.style.marginTop = '10px';
+            errorDiv.textContent = error;
+            form.appendChild(errorDiv);
+            return;
+        }
         alert('Information saved successfully!');
-        modal.style.display = 'none';
+        document.getElementById('sectionModal').style.display = 'none';
     }
 
     // Close modal handlers
@@ -337,5 +361,66 @@ function deleteAccount() {
 }
 
 function editPersonalInfo() {
-    alert('Personal information editing would redirect to a dedicated form.');
+    const userData = JSON.parse(localStorage.getItem('currentUser')) || {};
+    const modalBody = document.getElementById('modalBody');
+    const modal = document.getElementById('sectionModal');
+    modalBody.innerHTML = `
+        <form id="personalInfoForm">
+            <div class="form-group">
+                <label for="editName">Full Name</label>
+                <input type="text" id="editName" value="${userData.name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="editEmail">Email</label>
+                <input type="email" id="editEmail" value="${userData.email || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="editUniversity">University</label>
+                <input type="text" id="editUniversity" value="${userData.university || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="editDepartment">Department</label>
+                <input type="text" id="editDepartment" value="${userData.department || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="editYear">Year of Study</label>
+                <input type="number" id="editYear" value="${userData.yearOfStudy || ''}" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="editLinkedIn">LinkedIn</label>
+                <input type="url" id="editLinkedIn" value="${userData.linkedinUrl || ''}" required>
+            </div>
+            <button type="submit" class="btn-primary">Save</button>
+        </form>
+        <div id="personalInfoError" style="color:#dc2626;margin-top:10px;"></div>
+    `;
+    modal.style.display = 'block';
+    document.getElementById('personalInfoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Validation
+        const name = document.getElementById('editName').value.trim();
+        const email = document.getElementById('editEmail').value.trim();
+        const university = document.getElementById('editUniversity').value.trim();
+        const department = document.getElementById('editDepartment').value.trim();
+        const year = document.getElementById('editYear').value.trim();
+        const linkedin = document.getElementById('editLinkedIn').value.trim();
+        if (!name || !email || !university || !department || !year || !linkedin) {
+            document.getElementById('personalInfoError').textContent = 'All fields are required.';
+            return;
+        }
+        // Save
+        const updatedUser = {
+            ...userData,
+            name,
+            email,
+            university,
+            department,
+            yearOfStudy: year,
+            linkedinUrl: linkedin
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('sectionModal').style.display = 'none';
+        alert('Personal information updated successfully!');
+    });
 }

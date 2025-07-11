@@ -157,24 +157,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const jobsGrid = document.getElementById('jobsGrid');
         const noJobsMessage = document.getElementById('noJobsMessage');
 
-        console.log('=== Job Filtering Debug ===');
-        console.log('User data:', userData);
-        console.log('User year of study:', userData.yearOfStudy);
-        console.log('Available job categories:', Object.keys(jobCategories));
-
-        // Ensure yearOfStudy is a number and get jobs for ONLY that year
+        // Map year to category
+        const yearToCategory = {
+            2: 'document-summary',
+            3: 'legal-research',
+            4: 'legal-filings',
+            5: 'corporate-advisory'
+        };
         const userYear = parseInt(userData.yearOfStudy) || 2;
-        console.log('Parsed user year:', userYear);
+        const category = yearToCategory[userYear];
 
-        const jobs = jobCategories[userYear] || [];
-        console.log('Jobs for year', userYear, ':', jobs);
-        console.log('Number of jobs found:', jobs.length);
+        // Get jobs from localStorage
+        const allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+        const jobs = allJobs.filter(job => job.category === category);
 
-        // ALWAYS clear the grid first to remove any previous jobs
+        // If no jobs posted by employers, fallback to static
+        let jobsToShow = jobs;
+        if (!jobs.length) {
+            // fallback to static
+            jobsToShow = jobCategories[userYear] || [];
+        }
+
         jobsGrid.innerHTML = '';
 
-        if (jobs.length === 0) {
-            console.log('No jobs found for this year - showing no jobs message');
+        if (!jobsToShow.length) {
             jobsGrid.style.display = 'none';
             noJobsMessage.style.display = 'block';
             noJobsMessage.innerHTML = `
@@ -187,33 +193,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Show jobs grid and hide no jobs message
         jobsGrid.style.display = 'grid';
         noJobsMessage.style.display = 'none';
 
-        jobs.forEach(job => {
+        jobsToShow.forEach(job => {
             const jobCard = document.createElement('div');
             jobCard.className = 'job-card';
             jobCard.innerHTML = `
-                <div class="job-icon">${job.icon}</div>
+                <div class="job-icon">${job.icon || ''}</div>
                 <div class="job-title">${job.title}</div>
-                <div class="job-rating">${createStarRating(job.rating)}</div>
-                <div class="job-details">${job.description}</div>
+                <div class="job-rating">${job.rating ? createStarRating(job.rating) : ''}</div>
+                <div class="job-description">${job.description}</div>
+                <div class="job-employer">${job.employerName ? `<strong>Employer:</strong> ${job.employerName}` : ''}</div>
             `;
-            
-            jobCard.addEventListener('click', () => {
-                // Handle job card click
-                console.log('Job clicked:', job);
-                alert(`You clicked on: ${job.title}\nRating: ${job.rating}/5\n${job.description}`);
-                // Here you would typically navigate to job details page
-                // window.location.href = `job-details.html?id=${job.id}`;
-            });
-
             jobsGrid.appendChild(jobCard);
         });
-
-        console.log(`✅ SUCCESS: Filtered and displayed ${jobs.length} jobs for year ${userYear} ONLY`);
-        console.log('Jobs displayed:', jobs.map(j => j.title));
     }
 
     // Search functionality
@@ -227,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             jobCards.forEach(card => {
                 const title = card.querySelector('.job-title').textContent.toLowerCase();
-                const description = card.querySelector('.job-details').textContent.toLowerCase();
+                const description = card.querySelector('.job-description').textContent.toLowerCase();
                 
                 if (title.includes(searchTerm) || description.includes(searchTerm)) {
                     card.style.display = 'block';

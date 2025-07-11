@@ -30,6 +30,14 @@
                         </select>
                         <div class="dropdown-arrow">▼</div>
                     </div>
+                    <!-- Logo upload field -->
+                    <div class="form-field">
+                        <label for="employer-logo" style="display:block;margin-bottom:4px;">Company Logo</label>
+                        <input type="file" id="employer-logo" accept="image/*">
+                        <div id="logo-preview-container" style="margin-top:8px;">
+                            <img id="logo-preview" src="" alt="Logo Preview" style="display:none;max-width:80px;max-height:80px;border-radius:8px;" />
+                        </div>
+                    </div>
                     
                     <div class="form-field">
                         <input type="text" id="employer-name" placeholder="Full Name / Company Name" required>
@@ -76,26 +84,30 @@
     </div>
 
     <script>
-        document.getElementById('employer-signup-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const employerType = document.getElementById('employer-type').value;
-            const name = document.getElementById('employer-name').value;
-            const email = document.getElementById('employer-email').value;
-            const phone = document.getElementById('employer-phone').value;
-            const password = document.getElementById('employer-password').value;
-            
-            if (employerType && name && email && phone && password) {
-                alert(`Welcome ${name}! Your employer account has been created successfully.`);
-                window.location.href = 'employer-signin.html';
-            } else {
-                alert('Please fill in all required fields');
-            }
-        });
-
         function handleGoogleSignUp() {
             // Google sign-up functionality would be implemented here
         }
+
+        // Logo preview logic
+        const logoInput = document.getElementById('employer-logo');
+        const logoPreview = document.getElementById('logo-preview');
+        let logoDataUrl = '';
+        logoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    logoPreview.src = evt.target.result;
+                    logoPreview.style.display = 'block';
+                    logoDataUrl = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                logoPreview.src = '';
+                logoPreview.style.display = 'none';
+                logoDataUrl = '';
+            }
+        });
 
         // Phone number formatting
         document.getElementById('employer-phone').addEventListener('input', function() {
@@ -125,6 +137,23 @@
                     this.style.borderColor = '#d1d5db';
                 }
             });
+        });
+
+        // Save employer info to localStorage on signup
+        document.getElementById('employer-signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const employerInfo = {
+                type: document.getElementById('employer-type').value,
+                name: document.getElementById('employer-name').value,
+                reg: document.getElementById('employer-reg').value,
+                email: document.getElementById('employer-email').value,
+                phone: document.getElementById('employer-phone').value,
+                logo: logoDataUrl
+            };
+            localStorage.setItem('employerInfo', JSON.stringify(employerInfo));
+            // Optionally redirect to profile or show a success message
+            alert('Sign up successful!');
+            // window.location.href = 'employer-profile.html';
         });
     </script>
     <!-- Firebase Authentication -->

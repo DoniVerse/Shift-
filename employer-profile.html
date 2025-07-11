@@ -20,12 +20,15 @@
 
         <div class="profile-section">
             <div class="profile-avatar">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
+                <img id="company-logo" src="" alt="Company Logo" style="display:none;max-width:80px;max-height:80px;border-radius:8px;" />
+                <svg id="default-avatar" width="60" height="60" viewBox="0 0 24 24" fill="none">
                     <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                 </svg>
             </div>
-            <h1 class="company-name">Law Firm</h1>
+            <h1 class="company-name" id="profile-company-name">Company Name</h1>
+            <!-- Logout button -->
+            <button id="logout-btn" style="margin-top: 24px; width: 100%; padding: 10px 0; background: #dc2626; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Logout</button>
         </div>
 
         <div class="menu-section">
@@ -42,41 +45,6 @@
                     </svg>
                 </div>
             </div>
-
-            <div class="menu-item" onclick="showLicenseInfo()">
-                <div class="menu-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <span class="menu-text">License</span>
-                <div class="menu-arrow">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-
-            <div class="menu-item" onclick="showEmployeeInfo()">
-                <div class="menu-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 1.17157 16.1716C0.421427 16.9217 0 17.9391 0 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                        <path d="M23 21V19C23 18.1332 22.7361 17.2986 22.2416 16.5956C21.7471 15.8927 21.0424 15.3581 20.2209 15.0657" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 18.9078 6.11683 18.7563 6.96353C18.6047 7.81023 18.1147 8.58044 17.3789 9.10338C16.6431 9.62632 15.7556 9.86614 14.8889 9.7859" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <span class="menu-text">Employee Information</span>
-                <div class="menu-arrow">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-
             <div class="menu-item" onclick="showJobInfo()">
                 <div class="menu-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -126,83 +94,27 @@
     </div>
 
     <script>
-        // Sample data (in a real app, this would come from the database)
-        const employerData = {
-            company: {
-                name: "Smith & Associates Law Firm",
-                type: "Law Firm",
-                registrationNumber: "LF-2023-001234",
-                address: "123 Legal Street, Downtown, NY 10001",
-                phone: "(555) 123-4567",
-                email: "contact@smithlaw.com",
-                website: "www.smithlaw.com",
-                foundedYear: "2015",
-                employeeCount: "25-50"
-            },
-            license: {
-                businessLicense: "BL-NY-2023-5678",
-                issueDate: "January 15, 2023",
-                expiryDate: "January 15, 2024",
-                issuingAuthority: "New York State Department of State",
-                status: "Active",
-                specializations: ["Corporate Law", "Intellectual Property", "Contract Law"]
-            },
-            employees: [
-                {
-                    name: "John Smith",
-                    position: "Senior Partner",
-                    department: "Corporate Law",
-                    joinDate: "2015-03-01",
-                    email: "j.smith@smithlaw.com"
-                },
-                {
-                    name: "Sarah Johnson",
-                    position: "Associate Attorney",
-                    department: "Intellectual Property",
-                    joinDate: "2020-06-15",
-                    email: "s.johnson@smithlaw.com"
-                },
-                {
-                    name: "Michael Brown",
-                    position: "Legal Assistant",
-                    department: "General Practice",
-                    joinDate: "2021-09-01",
-                    email: "m.brown@smithlaw.com"
-                }
-            ],
-            jobs: [
-                {
-                    title: "Legal Research Assistant",
-                    category: "Legal Research Assistance",
-                    status: "Active",
-                    applicants: 12,
-                    postedDate: "2024-01-05",
-                    paymentCode: "ETB 200",
-                    paymentType: "Hourly"
-                },
-                {
-                    title: "Document Preparation Specialist",
-                    category: "Preparing Legal Filings & Case Documents",
-                    status: "Active",
-                    applicants: 8,
-                    postedDate: "2024-01-03",
-                    paymentCode: "ETB 180",
-                    paymentType: "Hourly"
-                },
-                {
-                    title: "Corporate Legal Advisor",
-                    category: "Corporate Legal Advisory Support",
-                    status: "Closed",
-                    applicants: 25,
-                    postedDate: "2023-12-20",
-                    paymentCode: "ETB 300",
-                    paymentType: "Monthly"
-                }
-            ]
-        };
-
         function goBack() {
             window.history.back();
+        }
+
+        // Load employer info from localStorage
+        let employerInfo = null;
+        try {
+            employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
+        } catch (e) {}
+
+        // Set profile section
+        if (employerInfo) {
+            document.getElementById('profile-company-name').textContent = employerInfo.name || 'Company Name';
+            if (employerInfo.logo) {
+                document.getElementById('company-logo').src = employerInfo.logo;
+                document.getElementById('company-logo').style.display = 'block';
+                document.getElementById('default-avatar').style.display = 'none';
+            } else {
+                document.getElementById('company-logo').style.display = 'none';
+                document.getElementById('default-avatar').style.display = 'block';
+            }
         }
 
         function showModal(title, content) {
@@ -218,201 +130,56 @@
         }
 
         function showCompanyInfo() {
-            const company = employerData.company;
+            if (!employerInfo) {
+                showModal('Company Information', '<div>No company information available.</div>');
+                return;
+            }
             const content = `
                 <div class="info-section">
                     <div class="info-item">
                         <strong>Company Name:</strong>
-                        <span>${company.name}</span>
+                        <span>${employerInfo.name || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Type:</strong>
-                        <span>${company.type}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Registration Number:</strong>
-                        <span>${company.registrationNumber}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Address:</strong>
-                        <span>${company.address}</span>
+                        <span>${employerInfo.type || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Phone:</strong>
-                        <span>${company.phone}</span>
+                        <span>${employerInfo.phone || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Email:</strong>
-                        <span>${company.email}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Website:</strong>
-                        <span>${company.website}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Founded:</strong>
-                        <span>${company.foundedYear}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Employee Count:</strong>
-                        <span>${company.employeeCount}</span>
+                        <span>${employerInfo.email || ''}</span>
                     </div>
                 </div>
             `;
             showModal('Company Information', content);
         }
 
-        function showLicenseInfo() {
-            const license = employerData.license;
-            const content = `
-                <div class="info-section">
-                    <div class="info-item">
-                        <strong>Business License:</strong>
-                        <span>${license.businessLicense}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Issue Date:</strong>
-                        <span>${license.issueDate}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Expiry Date:</strong>
-                        <span>${license.expiryDate}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Issuing Authority:</strong>
-                        <span>${license.issuingAuthority}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Status:</strong>
-                        <span class="status-active">${license.status}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Specializations:</strong>
-                        <div class="specializations">
-                            ${license.specializations.map(spec => `<span class="spec-tag">${spec}</span>`).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-            showModal('License Information', content);
-        }
-
-        function showEmployeeInfo() {
-            const employees = employerData.employees;
-            const content = `
-                <div class="info-section">
-                    <div class="employee-count">
-                        <strong>Total Employees: ${employees.length}</strong>
-                    </div>
-                    ${employees.map(employee => `
-                        <div class="employee-card">
-                            <div class="employee-header">
-                                <h4>${employee.name}</h4>
-                                <span class="employee-position">${employee.position}</span>
-                            </div>
-                            <div class="employee-details">
-                                <div class="info-item">
-                                    <strong>Department:</strong>
-                                    <span>${employee.department}</span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>Join Date:</strong>
-                                    <span>${new Date(employee.joinDate).toLocaleDateString()}</span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>Email:</strong>
-                                    <span>${employee.email}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            showModal('Employee Information', content);
-        }
-
         function showJobInfo() {
-            const jobs = employerData.jobs;
-            const content = `
-                <div class="info-section">
-                    <div class="job-stats">
-                        <div class="stat-item">
-                            <strong>Total Jobs:</strong> ${jobs.length}
-                        </div>
-                        <div class="stat-item">
-                            <strong>Active Jobs:</strong> ${jobs.filter(job => job.status === 'Active').length}
-                        </div>
+            // Show jobs posted by this employer
+            const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+            const employer = employerInfo || {};
+            const myJobs = jobs.filter(job => job.employerEmail === employer.email);
+            if (!myJobs.length) {
+                showModal('Job Postings', '<div>No job postings yet. Add jobs from the Add-Job section.</div>');
+                return;
+            }
+            let content = '<div class="info-section">';
+            myJobs.forEach(job => {
+                content += `
+                    <div class="job-card">
+                        <div><strong>Title:</strong> ${job.title}</div>
+                        <div><strong>Category:</strong> ${job.categoryTitle || job.category}</div>
+                        <div><strong>Payment:</strong> ${job.paymentCode}</div>
+                        <div><strong>Description:</strong> ${job.description}</div>
                     </div>
-                    ${jobs.map(job => `
-                        <div class="job-card">
-                            <div class="job-header">
-                                <h4>${job.title}</h4>
-                                <span class="job-status ${job.status.toLowerCase()}">${job.status}</span>
-                            </div>
-                            <div class="job-details">
-                                <div class="info-item">
-                                    <strong>Category:</strong>
-                                    <span>${job.category}</span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>Posted Date:</strong>
-                                    <span>${new Date(job.postedDate).toLocaleDateString()}</span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>Applicants:</strong>
-                                    <span>${job.applicants}</span>
-                                </div>
-                                <div class="info-item">
-                                    <strong>Payment:</strong>
-                                    <span>${job.paymentCode} - ${job.paymentType}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+                    <hr />
+                `;
+            });
+            content += '</div>';
             showModal('Job Postings', content);
-        }
-
-        function showSettings() {
-            const content = `
-                <div class="info-section">
-                    <div class="settings-group">
-                        <h4>Account Settings</h4>
-                        <div class="setting-item">
-                            <span>Change Password</span>
-                            <button class="setting-btn">Update</button>
-                        </div>
-                        <div class="setting-item">
-                            <span>Email Notifications</span>
-                            <button class="setting-btn">Configure</button>
-                        </div>
-                    </div>
-                    <div class="settings-group">
-                        <h4>Privacy Settings</h4>
-                        <div class="setting-item">
-                            <span>Profile Visibility</span>
-                            <button class="setting-btn">Manage</button>
-                        </div>
-                        <div class="setting-item">
-                            <span>Data Export</span>
-                            <button class="setting-btn">Download</button>
-                        </div>
-                    </div>
-                    <div class="settings-group">
-                        <h4>Support</h4>
-                        <div class="setting-item">
-                            <span>Help Center</span>
-                            <button class="setting-btn">Visit</button>
-                        </div>
-                        <div class="setting-item">
-                            <span>Contact Support</span>
-                            <button class="setting-btn">Contact</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            showModal('Settings', content);
         }
 
         // Close modal with Escape key
@@ -421,7 +188,22 @@
                 closeModal();
             }
         });
+
+        // Logout logic
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            localStorage.removeItem('employerInfo');
+            window.location.href = 'employer-signin.html';
+        });
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (user.userType !== 'employer') {
+        alert('Access denied. Only employers can access this page.');
+        window.location.href = 'employer-signin.html';
+    }
+});
+</script>
     <!-- Chat Widget Integration -->
     <script src="chat-integration-widget.js"></script>
 </body>

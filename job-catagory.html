@@ -131,6 +131,32 @@
         </div>
     </div>
 
+    <script type="module">
+  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+    authDomain: "shift-3140e.firebaseapp.com",
+    projectId: "shift-3140e",
+    storageBucket: "shift-3140e.firebasestorage.app",
+    messagingSenderId: "716245939154",
+    appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+    measurementId: "G-F6WJ0T3E71"
+  };
+
+  if (!window.firebaseApp) {
+    window.firebaseApp = initializeApp(firebaseConfig);
+  }
+  const auth = getAuth();
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = 'employer-signin.html';
+    }
+  });
+</script>
+
     <script>
         function selectJobCategory(category) {
             // Store the selected category
@@ -161,6 +187,14 @@
             // Redirect directly to add job page with pre-filled category
             window.location.href = `add-job.html?category=${category}&title=${encodeURIComponent(selected.title)}`;
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (user.userType !== 'employer') {
+                alert('Access denied. Only employers can access this page.');
+                window.location.href = 'student-profile.html';
+            }
+        });
 
 
     </script>

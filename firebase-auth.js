@@ -209,9 +209,9 @@ class FirebaseAuthManager {
 
             // Redirect based on user type
             if (userData.userType === 'student') {
-                window.location.href = 'job-listing.html';
+                window.location.href = 'studentlogin.html';
             } else {
-                window.location.href = 'employer-profile.html';
+                window.location.href = 'employer-signin.html';
             }
 
         } catch (error) {
@@ -239,9 +239,9 @@ class FirebaseAuthManager {
 
                 // Redirect based on user type
                 if (userData.userType === 'student') {
-                    window.location.href = 'job-listing.html';
+                    window.location.href = 'Job-listing.html';
                 } else {
-                    window.location.href = 'employer-profile.html';
+                    window.location.href = 'job-catagory.html';
                 }
             } else {
                 throw new Error('User profile not found');

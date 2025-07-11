@@ -80,26 +80,44 @@
             window.history.back();
         }
 
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (user.userType !== 'employer') {
+                alert('Access denied. Only employers can access this page.');
+                window.location.href = 'student-profile.html';
+            }
+        });
+
         document.getElementById('job-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const jobTitle = document.getElementById('job-title').value;
             const jobDescription = document.getElementById('job-description').value;
             const paymentCode = document.getElementById('payment-code').value;
-            const paymentType = document.getElementById('payment-type').value;
-
-            if (jobTitle && jobDescription && paymentCode && paymentType) {
-                alert(`Job "${jobTitle}" has been published successfully!`);
-                // In a real app, you would send this data to your backend
-                console.log({
+            // Get category from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get('category') || '';
+            const categoryTitle = urlParams.get('title') || '';
+            // Get employer info
+            const employer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+            if (jobTitle && jobDescription && paymentCode && category) {
+                // Build job object
+                const job = {
                     title: jobTitle,
                     description: jobDescription,
                     paymentCode: paymentCode,
-                    paymentType: paymentType
-                });
-                
-                // Redirect to jobs dashboard
-                // window.location.href = 'employer-dashboard.html';
+                    category: category,
+                    categoryTitle: categoryTitle,
+                    employerName: employer.name || '',
+                    employerEmail: employer.email || '',
+                    timestamp: Date.now()
+                };
+                // Save to localStorage
+                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                jobs.push(job);
+                localStorage.setItem('jobs', JSON.stringify(jobs));
+                alert(`Job "${jobTitle}" has been published successfully!`);
+                window.location.href = 'employer-profile.html';
             } else {
                 alert('Please fill in all required fields');
             }
