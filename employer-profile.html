@@ -59,6 +59,20 @@
                     </svg>
                 </div>
             </div>
+            <div class="menu-item" onclick="viewApplications()">
+                <div class="menu-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="menu-text">Job Applications</span>
+                <div class="menu-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
         </div>
 
         <div class="settings-section">
@@ -170,6 +184,65 @@
             });
             content += '</div>';
             showModal('Job Postings', content);
+        }
+
+        function viewApplications() {
+            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            const currentEmployer = employerInfo || {};
+
+            // Filter applications for this employer
+            const myApplications = applications.filter(app =>
+                app.employerEmail === currentEmployer.email ||
+                app.employerName === currentEmployer.name
+            );
+
+            if (myApplications.length === 0) {
+                showModal('Job Applications', '<p>No applications received yet.</p>');
+                return;
+            }
+
+            let applicationsHTML = '<div style="max-height: 400px; overflow-y: auto;">';
+            myApplications.forEach((app, index) => {
+                applicationsHTML += `
+                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;">
+                        <h4>${app.jobTitle}</h4>
+                        <p><strong>Applicant:</strong> ${app.studentName}</p>
+                        <p><strong>Email:</strong> ${app.studentEmail}</p>
+                        <p><strong>University:</strong> ${app.studentUniversity}</p>
+                        <p><strong>Year of Study:</strong> ${app.studentYear}</p>
+                        <p><strong>Department:</strong> ${app.studentDepartment}</p>
+                        <p><strong>Applied:</strong> ${new Date(app.appliedAt).toLocaleDateString()}</p>
+                        <p><strong>Status:</strong> <span style="color: green;">${app.status}</span></p>
+                        <div style="margin-top: 10px;">
+                            <button onclick="contactStudent('${app.studentEmail}', '${app.studentName}')" style="background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                                Contact Student
+                            </button>
+                            <button onclick="updateApplicationStatus(${index}, 'Reviewed')" style="background: #5a3e5d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Mark as Reviewed
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            applicationsHTML += '</div>';
+
+            showModal('Job Applications', applicationsHTML);
+        }
+
+        function contactStudent(email, name) {
+            const subject = encodeURIComponent('Regarding Your Job Application');
+            const body = encodeURIComponent(`Dear ${name},\\n\\nThank you for your application. We would like to discuss the opportunity further.\\n\\nBest regards,\\n${employerInfo?.name || 'Employer'}`);
+            window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+        }
+
+        function updateApplicationStatus(index, status) {
+            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            if (applications[index]) {
+                applications[index].status = status;
+                localStorage.setItem('jobApplications', JSON.stringify(applications));
+                alert(`Application status updated to: ${status}`);
+                viewApplications(); // Refresh the view
+            }
         }
 
         // Close modal with Escape key

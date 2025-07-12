@@ -102,8 +102,36 @@
             const urlParams = new URLSearchParams(window.location.search);
             const category = urlParams.get('category') || '';
             const categoryTitle = urlParams.get('title') || '';
-            // Get employer info
-            const employer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+            // Get employer info from both possible sources
+            const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+            // Use employerInfo if available, otherwise use currentUser
+            const employer = {
+                name: employerInfo.name || currentUser.name || '',
+                email: employerInfo.email || currentUser.email || ''
+            };
+
+            console.log('Employer info:', employer);
+            console.log('EmployerInfo localStorage:', employerInfo);
+            console.log('CurrentUser localStorage:', currentUser);
+
+            // Show debug info to user
+            const debugInfo = `
+🔍 DEBUG INFO:
+Employer Name: ${employer.name || 'MISSING'}
+Employer Email: ${employer.email || 'MISSING'}
+
+From employerInfo: ${employerInfo.name || 'none'} / ${employerInfo.email || 'none'}
+From currentUser: ${currentUser.name || 'none'} / ${currentUser.email || 'none'}
+
+Continue with job publishing?
+            `;
+
+            if (!confirm(debugInfo)) {
+                return;
+            }
+
             if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
                 // Build job object
                 const job = {
@@ -122,7 +150,7 @@
                 jobs.push(job);
                 localStorage.setItem('jobs', JSON.stringify(jobs));
                 alert(`Job "${jobTitle}" has been published successfully!`);
-                window.location.href = 'employer-profile.html';
+                window.location.href = 'job-catagory.html';
             } else {
                 alert('Please fill in all required fields');
             }

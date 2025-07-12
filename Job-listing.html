@@ -104,30 +104,138 @@
             // Store the selected category
             localStorage.setItem('selectedJobCategory', category);
 
-            // Get category details
-            const categoryDetails = {
-                'legal-filings': {
-                    title: 'Preparing Legal Filings & Case Documents',
-                    description: 'Create and prepare legal documents, filings, and case materials'
-                },
-                'document-summary': {
-                    title: 'Summarizing Legal Documents',
-                    description: 'Review and summarize complex legal documents and contracts'
-                },
-                'corporate-advisory': {
-                    title: 'Corporate Legal Advisory Support',
-                    description: 'Provide legal advisory support for corporate matters and compliance'
-                },
-                'legal-research': {
-                    title: 'Legal Research Assistance',
-                    description: 'Conduct thorough legal research and analysis on various topics'
+            // Get all published jobs from localStorage
+            const allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+            console.log('All jobs in localStorage:', allJobs);
+            console.log('Looking for category:', category);
+
+            const categoryJobs = allJobs.filter(job => {
+                console.log('Job category:', job.category, 'Target category:', category);
+                return job.category === category;
+            });
+
+            console.log('Found jobs for category:', categoryJobs);
+
+            if (categoryJobs.length === 0) {
+                // Show debug info
+                const debugInfo = `
+                    No jobs found for category: ${category}
+
+                    Total jobs in storage: ${allJobs.length}
+                    Available categories: ${[...new Set(allJobs.map(job => job.category))].join(', ')}
+
+                    Would you like to see all available jobs for debugging?
+                `;
+
+                if (confirm(debugInfo)) {
+                    // Show all jobs for debugging
+                    if (allJobs.length > 0) {
+                        showCategoryJobs(category, allJobs, true);
+                    } else {
+                        alert('No jobs have been published yet. Employers need to publish jobs first.');
+                    }
                 }
+                return;
+            }
+
+            // Show jobs in this category
+            showCategoryJobs(category, categoryJobs);
+        }
+
+        function showCategoryJobs(category, jobs, debugMode = false) {
+            // Create modal to show jobs
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+
+            const categoryTitles = {
+                'legal-filings': 'Preparing Legal Filings & Case Documents',
+                'document-summary': 'Summarizing Legal Documents',
+                'corporate-advisory': 'Corporate Legal Advisory Support',
+                'legal-research': 'Legal Research Assistance'
             };
 
-            const selected = categoryDetails[category];
+            let jobsHTML = '';
+            jobs.forEach((job, index) => {
+                jobsHTML += `
+                    <div class="job-item" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: white;">
+                        <h3>${job.title}</h3>
+                        <p><strong>Employer:</strong> ${job.employerName || 'Unknown Employer'}</p>
+                        <p><strong>Description:</strong> ${job.description}</p>
+                        <p><strong>Payment:</strong> ${job.paymentCode}</p>
+                        <p><strong>Expected Hours:</strong> ${job.expectedHours}</p>
+                        ${debugMode ? `<p><strong>Category:</strong> ${job.category}</p>` : ''}
+                        ${debugMode ? `<p><strong>Published:</strong> ${new Date(job.timestamp).toLocaleString()}</p>` : ''}
+                        <button onclick="applyToJob(${index}, '${category}')" style="background: #d17e7e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            Apply Now
+                        </button>
+                    </div>
+                `;
+            });
 
-            // Show job details or redirect to job application
-            alert(`You selected: ${selected.title}\n\nDescription: ${selected.description}\n\nThis would typically show available jobs in this category or redirect to application.`);
+            const modalTitle = debugMode ? `All Jobs (Debug Mode)` : categoryTitles[category];
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>${modalTitle}</h2>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                    </div>
+                    <div>
+                        ${jobsHTML}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Store jobs for application
+            window.currentCategoryJobs = jobs;
+        }
+
+        function applyToJob(jobIndex, category) {
+            const job = window.currentCategoryJobs[jobIndex];
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+            if (!currentUser.name) {
+                alert('Please sign in to apply for jobs');
+                return;
+            }
+
+            // Create application
+            const application = {
+                jobTitle: job.title,
+                jobCategory: category,
+                employerName: job.employerName,
+                employerEmail: job.employerEmail,
+                studentName: currentUser.name,
+                studentEmail: currentUser.email,
+                studentYear: currentUser.yearOfStudy,
+                studentUniversity: currentUser.university,
+                studentDepartment: currentUser.department,
+                appliedAt: new Date().toISOString(),
+                status: 'Applied'
+            };
+
+            // Save application
+            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+            applications.push(application);
+            localStorage.setItem('jobApplications', JSON.stringify(applications));
+
+            alert(`Application submitted successfully!\n\nJob: ${job.title}\nEmployer: ${job.employerName}\n\nYour application has been sent to the employer.`);
+
+            // Close modal
+            document.querySelector('[style*="position: fixed"]').remove();
         }
     </script>
     <script src="job-listing.js"></script>

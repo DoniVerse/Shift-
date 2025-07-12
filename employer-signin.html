@@ -69,8 +69,20 @@
             const password = document.getElementById('employer-password').value;
             
             if (email && password) {
+                // For demo purposes, create a mock employer user
+                const mockEmployer = {
+                    name: 'Demo Law Firm',
+                    email: email,
+                    userType: 'employer',
+                    type: 'Law Firm'
+                };
+
+                // Store in both localStorage keys for compatibility
+                localStorage.setItem('currentUser', JSON.stringify(mockEmployer));
+                localStorage.setItem('employerInfo', JSON.stringify(mockEmployer));
+
                 alert(`Welcome back! You have been signed in successfully.`);
-             
+                window.location.href = 'job-catagory.html';
             } else {
                 alert('Please fill in all required fields');
             }
