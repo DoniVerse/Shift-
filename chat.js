@@ -1090,9 +1090,9 @@ class ChatApp {
         console.log('Files selected:', files.length);
 
         Array.from(files).forEach(file => {
-            // Check file size (max 10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+            // Check file size (max 5MB for Firestore compatibility)
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File "${file.name}" is too large. Maximum size is 5MB.\nFor larger files, consider using a file sharing service.`);
                 return;
             }
 
@@ -1238,19 +1238,42 @@ class ChatApp {
 
             // Store file info with base64 data for download
             if (this.selectedFiles.length > 0) {
-                const filesWithData = await Promise.all(
-                    this.selectedFiles.map(async (file) => {
-                        const base64Data = await this.fileToBase64(file);
-                        return {
-                            name: file.name,
-                            size: file.size,
-                            type: file.type,
-                            data: base64Data // Store file data for download
-                        };
-                    })
-                );
-                messageData.files = filesWithData;
-                console.log('📁 Files to send:', messageData.files.length);
+                console.log('📁 Processing files for sending...');
+
+                try {
+                    const filesWithData = await Promise.all(
+                        this.selectedFiles.map(async (file) => {
+                            console.log(`📄 Processing file: ${file.name} (${this.formatFileSize(file.size)})`);
+
+                            // Double-check file size before processing
+                            if (file.size > 5 * 1024 * 1024) {
+                                throw new Error(`File "${file.name}" is too large (${this.formatFileSize(file.size)}). Maximum size is 5MB.`);
+                            }
+
+                            const base64Data = await this.fileToBase64(file);
+
+                            // Check if base64 data is too large for Firestore
+                            if (base64Data.length > 800000) { // ~800KB base64 limit
+                                throw new Error(`File "${file.name}" is too large when encoded. Try compressing the file or use a smaller file.`);
+                            }
+
+                            return {
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                data: base64Data // Store file data for download
+                            };
+                        })
+                    );
+
+                    messageData.files = filesWithData;
+                    console.log(`✅ Successfully processed ${filesWithData.length} files`);
+
+                } catch (error) {
+                    console.error('❌ Error processing files:', error);
+                    alert(error.message);
+                    return; // Don't send message if file processing fails
+                }
             }
 
             // Send message
