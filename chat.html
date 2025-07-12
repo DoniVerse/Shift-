@@ -15,7 +15,7 @@
             <div class="sidebar-header">
                 <div class="user-info">
                     <div class="user-avatar">
-                        <img id="currentUserAvatar" src="https://via.placeholder.com/40x40/d17e7e/ffffff?text=U" alt="User">
+                        <img id="currentUserAvatar" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNkMTdlN2UiLz4KPHRleHQgeD0iMjAiIHk9IjI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCI+VTwvdGV4dD4KPHN2Zz4=" alt="User">
                         <div class="online-indicator"></div>
                     </div>
                     <div class="user-details">
@@ -82,7 +82,7 @@
                     </button>
                     <div class="chat-user-info">
                         <div class="chat-user-avatar">
-                            <img id="chatUserAvatar" src="https://via.placeholder.com/40x40/5a3e5d/ffffff?text=U" alt="User">
+                            <img id="chatUserAvatar" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM1YTNlNWQiLz4KPHRleHQgeD0iMjAiIHk9IjI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCI+VTwvdGV4dD4KPHN2Zz4=" alt="User">
                             <div class="online-indicator" id="chatUserOnline"></div>
                         </div>
                         <div class="chat-user-details">
@@ -112,7 +112,7 @@
                     <!-- Typing Indicator -->
                     <div class="typing-indicator" id="typingIndicator" style="display: none;">
                         <div class="typing-avatar">
-                            <img src="https://via.placeholder.com/30x30/5a3e5d/ffffff?text=U" alt="User">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTUiIGN5PSIxNSIgcj0iMTUiIGZpbGw9IiM1YTNlNWQiLz4KPHRleHQgeD0iMTUiIHk9IjIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iYm9sZCI+VTwvdGV4dD4KPHN2Zz4=" alt="User">
                         </div>
                         <div class="typing-animation">
                             <span></span>
@@ -124,6 +124,17 @@
 
                 <!-- Message Input -->
                 <div class="message-input-container">
+                    <!-- Hidden File Input -->
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar" style="display: none;" multiple>
+
+                    <!-- File Preview Area -->
+                    <div class="file-preview-container" id="filePreviewContainer" style="display: none;">
+                        <div class="file-preview-header">
+                            <span>📎 Files to send:</span>
+                            <button class="clear-files-btn" id="clearFilesBtn">✕ Clear All</button>
+                        </div>
+                        <div class="file-preview-list" id="filePreviewList"></div>
+                    </div>
                     <div class="message-input-wrapper">
                         <button class="attachment-btn" id="attachmentBtn" title="Attach File">
                             <i class="fas fa-paperclip"></i>

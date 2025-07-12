@@ -2,7 +2,7 @@
 // Telegram-like chat interface with Firebase integration
 
 // Import Firebase modules
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import {
     getFirestore,
     doc,
@@ -37,12 +37,22 @@ const firebaseConfig = {
     measurementId: "G-F6WJ0T3E71"
 };
 
-// Initialize Firebase
-console.log('Initializing Firebase with config:', firebaseConfig);
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-console.log('Firebase initialized - App:', app.name, 'DB:', !!db, 'Auth:', !!auth);
+// Initialize Firebase (with duplicate check)
+let app, db, auth;
+
+try {
+    // Try to get existing app first
+    app = getApp();
+    console.log('Using existing Firebase app');
+} catch (error) {
+    // If no app exists, create new one
+    console.log('Initializing new Firebase app with config:', firebaseConfig);
+    app = initializeApp(firebaseConfig);
+}
+
+db = getFirestore(app);
+auth = getAuth(app);
+console.log('Firebase ready - App:', app.name, 'DB:', !!db, 'Auth:', !!auth);
 
 // Chat Application Class
 class ChatApp {
@@ -57,6 +67,7 @@ class ChatApp {
         
         this.initializeElements();
         this.setupEventListeners();
+        this.initializeFileHandling();
         this.initializeAuth();
     }
 
@@ -110,7 +121,12 @@ class ChatApp {
 
         // Send message
         this.sendBtn.addEventListener('click', () => {
-            this.sendMessage();
+            const messageText = this.messageInput.value.trim();
+            if (this.selectedFiles && this.selectedFiles.length > 0) {
+                this.sendMessageWithFiles(messageText);
+            } else {
+                this.sendMessage();
+            }
         });
 
         // Message input events
@@ -159,17 +175,37 @@ class ChatApp {
     async initializeAuth() {
         this.showLoading(true);
 
+        // Set a timeout to prevent infinite loading
+        const loadingTimeout = setTimeout(() => {
+            console.log('⚠️ Loading timeout - hiding loading state');
+            this.showLoading(false);
+            this.showError('Loading took too long. Please refresh the page.');
+        }, 15000); // 15 second timeout
+
         // Listen for Firebase auth state changes
         onAuthStateChanged(auth, async (user) => {
             console.log('Auth state changed:', user ? user.email : 'No user');
 
+            clearTimeout(loadingTimeout); // Clear timeout since auth state changed
+
             if (user) {
                 await this.handleUserSignedIn(user);
             } else {
-                console.log('No user authenticated - redirecting to login');
+                console.log('No user authenticated - checking localStorage');
                 this.showLoading(false);
-                // Optionally redirect to login page
-                // window.location.href = 'studentlogin.html';
+
+                // Check if user data exists in localStorage (fallback)
+                const localUser = localStorage.getItem('currentUser');
+                if (localUser) {
+                    console.log('Found user in localStorage, but not authenticated with Firebase');
+                    this.showError('Session expired. Please sign in again.');
+                    setTimeout(() => {
+                        window.location.href = 'studentlogin.html';
+                    }, 2000);
+                } else {
+                    console.log('No user data found, redirecting to login');
+                    window.location.href = 'studentlogin.html';
+                }
             }
         });
     }
@@ -177,54 +213,116 @@ class ChatApp {
     // Handle user signed in
     async handleUserSignedIn(user) {
         this.currentUser = user;
-        console.log('Handling user sign in for:', user.email);
+        console.log('🔄 Handling user sign in for:', user.email);
 
         try {
-            // Get user profile from Firestore
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            console.log('📄 Loading user profile from Firestore...');
+
+            // Add timeout for Firestore operations
+            const userDocPromise = getDoc(doc(db, 'users', user.uid));
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Firestore timeout')), 10000)
+            );
+
+            const userDoc = await Promise.race([userDocPromise, timeoutPromise]);
 
             if (userDoc.exists()) {
                 const userProfile = { id: userDoc.id, ...userDoc.data() };
-                console.log('User profile loaded:', userProfile);
+                console.log('✅ User profile loaded:', userProfile);
 
                 this.updateUserInterface(userProfile);
 
-                // Load conversations and users
-                await this.loadConversations();
-                await this.loadUsers();
+                console.log('🔄 Loading conversations and users...');
+
+                // Load data with timeout protection
+                try {
+                    await Promise.race([
+                        this.loadConversations(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Conversations timeout')), 8000))
+                    ]);
+                    console.log('✅ Conversations loaded');
+                } catch (error) {
+                    console.warn('⚠️ Conversations loading failed:', error.message);
+                    this.showEmptyConversations();
+                }
+
+                try {
+                    await Promise.race([
+                        this.loadUsers(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Users timeout')), 8000))
+                    ]);
+                    console.log('✅ Users loaded');
+                } catch (error) {
+                    console.warn('⚠️ Users loading failed:', error.message);
+                    // Continue without users list
+                }
 
                 this.showLoading(false);
+                console.log('✅ Chat initialization complete');
+
             } else {
-                console.error('No user profile found in Firestore for:', user.uid);
+                console.error('❌ No user profile found in Firestore for:', user.uid);
                 this.showLoading(false);
-                alert('User profile not found. Please sign up first.');
+                this.showError('User profile not found. Please sign up first.');
             }
 
         } catch (error) {
-            console.error('Error handling user sign in:', error);
+            console.error('❌ Error handling user sign in:', error);
             this.showLoading(false);
-            alert('Error loading user profile: ' + error.message);
+
+            if (error.message.includes('timeout')) {
+                this.showError('Connection timeout. Please check your internet and refresh.');
+            } else {
+                this.showError('Error loading user profile: ' + error.message);
+            }
         }
+    }
+
+    // Generate local avatar
+    generateAvatar(name, size = 40) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = size;
+        canvas.height = size;
+
+        // Background color based on name
+        const colors = ['#d17e7e', '#5a3e5d', '#7e9dd1', '#7ed17e', '#d1d17e', '#d17ed1'];
+        const colorIndex = (name || 'U').charCodeAt(0) % colors.length;
+
+        // Draw background
+        ctx.fillStyle = colors[colorIndex];
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${size * 0.4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((name || 'U').charAt(0).toUpperCase(), size / 2, size / 2);
+
+        return canvas.toDataURL();
     }
 
     // Update user interface with user data
     updateUserInterface(userData) {
         this.currentUserName.textContent = userData.name || 'User';
         this.currentUserType.textContent = userData.userType || 'Student';
-        
+
         if (userData.profilePicture) {
             this.currentUserAvatar.src = userData.profilePicture;
+        } else {
+            this.currentUserAvatar.src = this.generateAvatar(userData.name || 'User');
         }
     }
 
     // Load user's conversations
     async loadConversations() {
         if (!this.currentUser) {
-            console.log('No current user, cannot load conversations');
+            console.log('❌ No current user, cannot load conversations');
             return;
         }
 
-        console.log('Loading conversations for user:', this.currentUser.uid);
+        console.log('🔄 Loading conversations for user:', this.currentUser.uid);
 
         try {
             const conversationsRef = collection(db, 'conversations');
@@ -233,13 +331,18 @@ class ChatApp {
                 where('participants', 'array-contains', this.currentUser.uid)
             );
 
+            // Set up snapshot listener with timeout protection
+            let snapshotReceived = false;
+
             const unsubscribe = onSnapshot(q, (snapshot) => {
-                console.log('Conversations snapshot received, size:', snapshot.size);
+                snapshotReceived = true;
+                console.log('📨 Conversations snapshot received, size:', snapshot.size);
+
                 this.conversations.clear();
                 this.conversationsList.innerHTML = '';
 
                 if (snapshot.empty) {
-                    console.log('No conversations found');
+                    console.log('📭 No conversations found');
                     this.showEmptyConversations();
                     return;
                 }
@@ -247,7 +350,7 @@ class ChatApp {
                 const conversationsArray = [];
                 snapshot.forEach((doc) => {
                     const conversation = { id: doc.id, ...doc.data() };
-                    console.log('Found conversation:', conversation.id, conversation);
+                    console.log('💬 Found conversation:', conversation.id);
                     conversationsArray.push(conversation);
                     this.conversations.set(doc.id, conversation);
                 });
@@ -264,56 +367,80 @@ class ChatApp {
                     this.renderConversationItem(conversation);
                 });
 
-                console.log(`✅ Loaded ${conversationsArray.length} conversations`);
+                console.log(`✅ Loaded ${conversationsArray.length} conversations successfully`);
             }, (error) => {
-                console.error('Error loading conversations:', error);
+                console.error('❌ Error in conversations listener:', error);
                 this.showEmptyConversations();
+                throw error; // Re-throw to be caught by outer try-catch
             });
 
+            // Timeout check for initial snapshot
+            setTimeout(() => {
+                if (!snapshotReceived) {
+                    console.warn('⚠️ Conversations snapshot timeout - showing empty state');
+                    this.showEmptyConversations();
+                }
+            }, 8000);
+
             this.unsubscribers.push(unsubscribe);
+
         } catch (error) {
-            console.error('Error setting up conversations listener:', error);
+            console.error('❌ Error setting up conversations listener:', error);
             this.showEmptyConversations();
+            throw error; // Re-throw for parent error handling
         }
     }
 
     // Load available users
     async loadUsers() {
         if (!this.currentUser) {
-            console.log('No current user, cannot load users');
+            console.log('❌ No current user, cannot load users');
             return;
         }
 
-        console.log('Loading users from Firestore...');
+        console.log('🔄 Loading users from Firestore...');
         try {
             const usersRef = collection(db, 'users');
             const q = query(usersRef, limit(50));
 
+            let snapshotReceived = false;
+
             const unsubscribe = onSnapshot(q, (snapshot) => {
-                console.log('Users snapshot received, size:', snapshot.size);
+                snapshotReceived = true;
+                console.log('👥 Users snapshot received, size:', snapshot.size);
                 this.users.clear();
 
                 snapshot.forEach((doc) => {
                     const user = { id: doc.id, ...doc.data() };
-                    console.log('Processing user:', user.name, user.email);
+                    console.log('👤 Processing user:', user.name || 'Unknown', user.email);
                     if (user.id !== this.currentUser.uid) {
                         this.users.set(doc.id, user);
                     }
                 });
 
-                console.log(`Loaded ${this.users.size} users for chat (excluding current user)`);
+                console.log(`✅ Loaded ${this.users.size} users for chat (excluding current user)`);
 
                 // If modal is open, refresh the users list
-                if (this.newChatModal.style.display === 'flex') {
+                if (this.newChatModal && this.newChatModal.style.display === 'flex') {
                     this.renderUsersList();
                 }
             }, (error) => {
-                console.error('Error loading users:', error);
+                console.error('❌ Error in users listener:', error);
+                // Don't throw error, just log it
             });
 
+            // Timeout check for initial snapshot
+            setTimeout(() => {
+                if (!snapshotReceived) {
+                    console.warn('⚠️ Users snapshot timeout - continuing without users');
+                }
+            }, 8000);
+
             this.unsubscribers.push(unsubscribe);
+
         } catch (error) {
-            console.error('Error setting up users listener:', error);
+            console.error('❌ Error setting up users listener:', error);
+            // Don't throw error, just log it
         }
     }
 
@@ -337,8 +464,7 @@ class ChatApp {
 
         // Use fallback data if user not found
         const userName = otherUser?.name || 'Unknown User';
-        const userAvatar = otherUser?.profilePicture ||
-            `https://via.placeholder.com/50x50/5a3e5d/ffffff?text=${userName.charAt(0)}`;
+        const userAvatar = otherUser?.profilePicture || this.generateAvatar(userName, 50);
         const isOnline = otherUser?.isOnline || false;
 
         conversationElement.innerHTML = `
@@ -410,8 +536,7 @@ class ChatApp {
                 this.updateActiveConversation(conversationId);
 
                 this.chatUserName.textContent = otherUser.name;
-                this.chatUserAvatar.src = otherUser.profilePicture ||
-                    `https://via.placeholder.com/40x40/5a3e5d/ffffff?text=${otherUser.name.charAt(0)}`;
+                this.chatUserAvatar.src = otherUser.profilePicture || this.generateAvatar(otherUser.name);
 
                 if (otherUser.isOnline) {
                     this.chatUserStatus.textContent = 'Online';
@@ -440,8 +565,7 @@ class ChatApp {
 
             if (otherUser) {
                 this.chatUserName.textContent = otherUser.name;
-                this.chatUserAvatar.src = otherUser.profilePicture ||
-                    `https://via.placeholder.com/40x40/5a3e5d/ffffff?text=${otherUser.name.charAt(0)}`;
+                this.chatUserAvatar.src = otherUser.profilePicture || this.generateAvatar(otherUser.name);
 
                 if (otherUser.isOnline) {
                     this.chatUserStatus.textContent = 'Online';
@@ -574,6 +698,42 @@ class ChatApp {
         this.loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
+    // Show error message
+    showError(message) {
+        console.error('💥 Error:', message);
+
+        // Create error notification
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-family: Arial, sans-serif;
+        `;
+        errorDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
+            </div>
+        `;
+
+        document.body.appendChild(errorDiv);
+
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 10000);
+    }
+
     showWelcomeScreen() {
         this.welcomeScreen.style.display = 'flex';
         this.chatArea.style.display = 'none';
@@ -662,7 +822,7 @@ class ChatApp {
 
             userElement.innerHTML = `
                 <div class="user-item-avatar">
-                    <img src="${user.profilePicture || 'https://via.placeholder.com/40x40/5a3e5d/ffffff?text=' + (user.name ? user.name.charAt(0) : 'U')}" alt="User">
+                    <img src="${user.profilePicture || this.generateAvatar(user.name || 'User')}" alt="User">
                 </div>
                 <div class="user-item-info">
                     <div class="user-item-name">${user.name || 'Unknown User'}</div>
@@ -802,6 +962,163 @@ class ChatApp {
         this.unsubscribers.forEach(unsubscribe => unsubscribe());
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
+        }
+    }
+
+    // Initialize file handling
+    initializeFileHandling() {
+        this.selectedFiles = [];
+        this.fileInput = document.getElementById('fileInput');
+        this.attachmentBtn = document.getElementById('attachmentBtn');
+        this.filePreviewContainer = document.getElementById('filePreviewContainer');
+        this.filePreviewList = document.getElementById('filePreviewList');
+        this.clearFilesBtn = document.getElementById('clearFilesBtn');
+
+        // Attachment button click
+        this.attachmentBtn.addEventListener('click', () => {
+            this.fileInput.click();
+        });
+
+        // File input change
+        this.fileInput.addEventListener('change', (e) => {
+            this.handleFileSelection(e.target.files);
+        });
+
+        // Clear files button
+        this.clearFilesBtn.addEventListener('click', () => {
+            this.clearSelectedFiles();
+        });
+    }
+
+    // Handle file selection
+    handleFileSelection(files) {
+        console.log('Files selected:', files.length);
+
+        Array.from(files).forEach(file => {
+            // Check file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+                return;
+            }
+
+            // Check if file already selected
+            if (this.selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                alert(`File "${file.name}" is already selected.`);
+                return;
+            }
+
+            this.selectedFiles.push(file);
+        });
+
+        this.updateFilePreview();
+        this.fileInput.value = ''; // Clear input
+    }
+
+    // Update file preview
+    updateFilePreview() {
+        if (this.selectedFiles.length === 0) {
+            this.filePreviewContainer.style.display = 'none';
+            return;
+        }
+
+        this.filePreviewContainer.style.display = 'block';
+        this.filePreviewList.innerHTML = '';
+
+        this.selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-preview-item';
+
+            const fileIcon = this.getFileIcon(file.type);
+            const fileSize = this.formatFileSize(file.size);
+
+            fileItem.innerHTML = `
+                <span class="file-preview-icon">${fileIcon}</span>
+                <span class="file-preview-name" title="${file.name}">${file.name}</span>
+                <span class="file-preview-size">${fileSize}</span>
+                <button class="file-remove-btn" data-index="${index}">✕</button>
+            `;
+
+            // Remove file button
+            fileItem.querySelector('.file-remove-btn').addEventListener('click', () => {
+                this.removeFile(index);
+            });
+
+            this.filePreviewList.appendChild(fileItem);
+        });
+    }
+
+    // Get file icon based on type
+    getFileIcon(fileType) {
+        if (fileType.startsWith('image/')) return '🖼️';
+        if (fileType.includes('pdf')) return '📄';
+        if (fileType.includes('word') || fileType.includes('document')) return '📝';
+        if (fileType.includes('text')) return '📃';
+        if (fileType.includes('zip') || fileType.includes('rar')) return '📦';
+        return '📎';
+    }
+
+    // Format file size
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Remove file from selection
+    removeFile(index) {
+        this.selectedFiles.splice(index, 1);
+        this.updateFilePreview();
+    }
+
+    // Clear all selected files
+    clearSelectedFiles() {
+        this.selectedFiles = [];
+        this.updateFilePreview();
+    }
+
+    // Send message with files (enhanced version)
+    async sendMessageWithFiles(messageText) {
+        if (!this.currentConversation) {
+            alert('Please select a conversation first');
+            return;
+        }
+
+        if (!messageText.trim() && this.selectedFiles.length === 0) {
+            alert('Please enter a message or select files to send');
+            return;
+        }
+
+        try {
+            const messageData = {
+                text: messageText.trim(),
+                senderId: this.currentUser.uid,
+                timestamp: serverTimestamp(),
+                type: this.selectedFiles.length > 0 ? 'file' : 'text',
+                files: []
+            };
+
+            // For now, we'll store file info (in production, upload to Firebase Storage)
+            if (this.selectedFiles.length > 0) {
+                messageData.files = this.selectedFiles.map(file => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    // In production: url: uploadedFileUrl
+                    url: `#file-${Date.now()}-${file.name}` // Placeholder
+                }));
+            }
+
+            // Send message
+            await this.sendMessage(messageData);
+
+            // Clear files after sending
+            this.clearSelectedFiles();
+
+        } catch (error) {
+            console.error('Error sending message with files:', error);
+            alert('Failed to send message: ' + error.message);
         }
     }
 }
