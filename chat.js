@@ -658,9 +658,11 @@ class ChatApp {
         // Add files if present
         if (message.files && message.files.length > 0) {
             messageContent += '<div class="message-files">';
-            message.files.forEach(file => {
+            message.files.forEach((file, index) => {
                 const fileIcon = this.getFileIcon(file.type);
                 const fileSize = this.formatFileSize(file.size);
+                const fileId = `file-${message.id}-${index}`;
+
                 messageContent += `
                     <div class="message-file-item">
                         <span class="file-icon">${fileIcon}</span>
@@ -668,7 +670,7 @@ class ChatApp {
                             <div class="file-name">${this.escapeHtml(file.name)}</div>
                             <div class="file-size">${fileSize}</div>
                         </div>
-                        <button class="file-download-btn" onclick="alert('File download would be implemented here')" title="Download file">
+                        <button class="file-download-btn" id="${fileId}" title="Download ${file.name}">
                             📥
                         </button>
                     </div>
@@ -685,6 +687,19 @@ class ChatApp {
         `;
 
         this.messagesList.appendChild(messageElement);
+
+        // Add download event listeners for files
+        if (message.files && message.files.length > 0) {
+            message.files.forEach((file, index) => {
+                const fileId = `file-${message.id}-${index}`;
+                const downloadBtn = document.getElementById(fileId);
+                if (downloadBtn && file.data) {
+                    downloadBtn.addEventListener('click', () => {
+                        this.downloadFile(file.name, file.data, file.type);
+                    });
+                }
+            });
+        }
     }
 
     // Send message
@@ -1158,6 +1173,45 @@ class ChatApp {
         this.updateFilePreview();
     }
 
+    // Convert file to base64
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    // Download file from message
+    downloadFile(fileName, fileData, fileType) {
+        try {
+            // Create blob from base64 data
+            const byteCharacters = atob(fileData.split(',')[1]);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: fileType });
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            console.log('✅ File downloaded:', fileName);
+        } catch (error) {
+            console.error('❌ Error downloading file:', error);
+            alert('Failed to download file: ' + error.message);
+        }
+    }
+
     // Send message with files (enhanced version)
     async sendMessageWithFiles(messageText) {
         if (!this.currentConversation) {
@@ -1182,16 +1236,21 @@ class ChatApp {
                 files: []
             };
 
-            // Store file info (in production, upload to Firebase Storage)
+            // Store file info with base64 data for download
             if (this.selectedFiles.length > 0) {
-                messageData.files = this.selectedFiles.map(file => ({
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    // In production: url: uploadedFileUrl
-                    url: `#file-${Date.now()}-${file.name}` // Placeholder
-                }));
-                console.log('📁 Files to send:', messageData.files);
+                const filesWithData = await Promise.all(
+                    this.selectedFiles.map(async (file) => {
+                        const base64Data = await this.fileToBase64(file);
+                        return {
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: base64Data // Store file data for download
+                        };
+                    })
+                );
+                messageData.files = filesWithData;
+                console.log('📁 Files to send:', messageData.files.length);
             }
 
             // Send message

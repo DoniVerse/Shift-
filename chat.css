@@ -35,9 +35,11 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: var(--chat-bg);
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     height: 100vh;
     overflow: hidden;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 /* Main Chat Container */
@@ -47,17 +49,22 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     background: var(--color-white);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-radius: 0;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
 }
 
 /* Chat Sidebar */
 .chat-sidebar {
     width: 350px;
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(209, 126, 126, 0.1);
     display: flex;
     flex-direction: column;
     height: 100vh;
+    position: relative;
 }
 
 .sidebar-header {
@@ -471,23 +478,33 @@ body {
 
 .message-bubble {
     max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 18px;
+    padding: 14px 18px;
+    border-radius: 20px;
     position: relative;
     word-wrap: break-word;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .message.sent .message-bubble {
-    background: var(--message-sent);
+    background: linear-gradient(135deg, var(--message-sent) 0%, #c16868 100%);
     color: var(--message-text-sent);
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 12px rgba(209, 126, 126, 0.3);
 }
 
 .message.received .message-bubble {
-    background: var(--message-received);
+    background: rgba(255, 255, 255, 0.95);
     color: var(--message-text-received);
-    border-bottom-left-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-bottom-left-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(209, 126, 126, 0.1);
 }
 
 .message-text {
@@ -558,9 +575,11 @@ body {
 
 /* Message Input */
 .message-input-container {
-    background: var(--color-white);
-    padding: 15px 20px;
-    border-top: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 20px;
+    border-top: 1px solid rgba(209, 126, 126, 0.1);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* File preview styles */
@@ -697,7 +716,19 @@ body {
 .message-input-wrapper {
     display: flex;
     align-items: flex-end;
-    gap: 10px;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(209, 126, 126, 0.2);
+    border-radius: 28px;
+    padding: 10px 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.message-input-wrapper:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 20px rgba(209, 126, 126, 0.2);
+    transform: translateY(-1px);
 }
 
 .attachment-btn {
