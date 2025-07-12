@@ -236,17 +236,7 @@ class ChatApp {
 
                 // Load data with timeout protection
                 try {
-                    await Promise.race([
-                        this.loadConversations(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Conversations timeout')), 8000))
-                    ]);
-                    console.log('✅ Conversations loaded');
-                } catch (error) {
-                    console.warn('⚠️ Conversations loading failed:', error.message);
-                    this.showEmptyConversations();
-                }
-
-                try {
+                    // Load users first, then conversations (so user data is available)
                     await Promise.race([
                         this.loadUsers(),
                         new Promise((_, reject) => setTimeout(() => reject(new Error('Users timeout')), 8000))
@@ -255,6 +245,17 @@ class ChatApp {
                 } catch (error) {
                     console.warn('⚠️ Users loading failed:', error.message);
                     // Continue without users list
+                }
+
+                try {
+                    await Promise.race([
+                        this.loadConversations(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Conversations timeout')), 8000))
+                    ]);
+                    console.log('✅ Conversations loaded');
+                } catch (error) {
+                    console.warn('⚠️ Conversations loading failed:', error.message);
+                    this.showEmptyConversations();
                 }
 
                 this.showLoading(false);
@@ -420,6 +421,9 @@ class ChatApp {
 
                 console.log(`✅ Loaded ${this.users.size} users for chat (excluding current user)`);
 
+                // Refresh conversations display now that we have user data
+                this.refreshConversationsDisplay();
+
                 // If modal is open, refresh the users list
                 if (this.newChatModal && this.newChatModal.style.display === 'flex') {
                     this.renderUsersList();
@@ -442,6 +446,29 @@ class ChatApp {
             console.error('❌ Error setting up users listener:', error);
             // Don't throw error, just log it
         }
+    }
+
+    // Refresh conversations display with updated user data
+    refreshConversationsDisplay() {
+        console.log('🔄 Refreshing conversations display with user data');
+
+        // Clear and re-render all conversations
+        this.conversationsList.innerHTML = '';
+
+        // Convert conversations map to array and sort
+        const conversationsArray = Array.from(this.conversations.values());
+        conversationsArray.sort((a, b) => {
+            const aTime = a.updatedAt?.toDate() || a.createdAt?.toDate() || new Date(0);
+            const bTime = b.updatedAt?.toDate() || b.createdAt?.toDate() || new Date(0);
+            return bTime - aTime;
+        });
+
+        // Re-render each conversation with updated user data
+        conversationsArray.forEach(conversation => {
+            this.renderConversationItem(conversation);
+        });
+
+        console.log(`✅ Refreshed ${conversationsArray.length} conversations with user data`);
     }
 
     // Render conversation item in sidebar
@@ -617,13 +644,42 @@ class ChatApp {
     renderMessage(message) {
         const messageElement = document.createElement('div');
         messageElement.className = `message ${message.senderId === this.currentUser.uid ? 'sent' : 'received'}`;
-        
-        const messageTime = message.timestamp ? 
+
+        const messageTime = message.timestamp ?
             this.formatTime(message.timestamp.toDate()) : 'Sending...';
+
+        let messageContent = '';
+
+        // Add text content if present
+        if (message.text && message.text.trim()) {
+            messageContent += `<div class="message-text">${this.escapeHtml(message.text)}</div>`;
+        }
+
+        // Add files if present
+        if (message.files && message.files.length > 0) {
+            messageContent += '<div class="message-files">';
+            message.files.forEach(file => {
+                const fileIcon = this.getFileIcon(file.type);
+                const fileSize = this.formatFileSize(file.size);
+                messageContent += `
+                    <div class="message-file-item">
+                        <span class="file-icon">${fileIcon}</span>
+                        <div class="file-info">
+                            <div class="file-name">${this.escapeHtml(file.name)}</div>
+                            <div class="file-size">${fileSize}</div>
+                        </div>
+                        <button class="file-download-btn" onclick="alert('File download would be implemented here')" title="Download file">
+                            📥
+                        </button>
+                    </div>
+                `;
+            });
+            messageContent += '</div>';
+        }
 
         messageElement.innerHTML = `
             <div class="message-bubble">
-                <div class="message-text">${this.escapeHtml(message.text)}</div>
+                ${messageContent}
                 <div class="message-time">${messageTime}</div>
             </div>
         `;
@@ -632,29 +688,53 @@ class ChatApp {
     }
 
     // Send message
-    async sendMessage() {
-        const text = this.messageInput.value.trim();
-        if (!text || !this.currentConversation) return;
+    async sendMessage(messageData = null) {
+        // If messageData is provided, use it; otherwise create from input
+        let messageToSend;
 
-        try {
-            // Clear input
-            this.messageInput.value = '';
-            this.adjustTextareaHeight();
+        if (messageData) {
+            messageToSend = messageData;
+        } else {
+            const text = this.messageInput.value.trim();
+            if (!text || !this.currentConversation) return;
 
-            // Add message to Firestore
-            const messagesRef = collection(db, 'conversations', this.currentConversation, 'messages');
-            await addDoc(messagesRef, {
+            messageToSend = {
                 senderId: this.currentUser.uid,
                 text: text,
                 type: 'text',
                 timestamp: serverTimestamp(),
                 status: 'sent'
-            });
+            };
+        }
 
-            // Update conversation
+        if (!this.currentConversation) {
+            alert('Please select a conversation first');
+            return;
+        }
+
+        try {
+            console.log('📤 Sending message:', messageToSend);
+
+            // Clear input only if not sending files
+            if (!messageData) {
+                this.messageInput.value = '';
+                this.adjustTextareaHeight();
+            }
+
+            // Add message to Firestore
+            const messagesRef = collection(db, 'conversations', this.currentConversation, 'messages');
+            await addDoc(messagesRef, messageToSend);
+
+            console.log('✅ Message sent successfully');
+
+            // Update conversation with last message
             const conversationRef = doc(db, 'conversations', this.currentConversation);
+            const lastMessageText = messageToSend.text ||
+                (messageToSend.files && messageToSend.files.length > 0 ?
+                    `📎 ${messageToSend.files.length} file(s)` : 'Message');
+
             await updateDoc(conversationRef, {
-                lastMessage: text,
+                lastMessage: lastMessageText,
                 lastMessageTime: serverTimestamp(),
                 updatedAt: serverTimestamp()
             });
@@ -1091,15 +1171,18 @@ class ChatApp {
         }
 
         try {
+            console.log('📎 Sending message with files:', this.selectedFiles.length);
+
             const messageData = {
                 text: messageText.trim(),
                 senderId: this.currentUser.uid,
                 timestamp: serverTimestamp(),
                 type: this.selectedFiles.length > 0 ? 'file' : 'text',
+                status: 'sent',
                 files: []
             };
 
-            // For now, we'll store file info (in production, upload to Firebase Storage)
+            // Store file info (in production, upload to Firebase Storage)
             if (this.selectedFiles.length > 0) {
                 messageData.files = this.selectedFiles.map(file => ({
                     name: file.name,
@@ -1108,16 +1191,21 @@ class ChatApp {
                     // In production: url: uploadedFileUrl
                     url: `#file-${Date.now()}-${file.name}` // Placeholder
                 }));
+                console.log('📁 Files to send:', messageData.files);
             }
 
             // Send message
             await this.sendMessage(messageData);
 
-            // Clear files after sending
+            // Clear input and files after sending
+            this.messageInput.value = '';
+            this.adjustTextareaHeight();
             this.clearSelectedFiles();
 
+            console.log('✅ Message with files sent successfully');
+
         } catch (error) {
-            console.error('Error sending message with files:', error);
+            console.error('❌ Error sending message with files:', error);
             alert('Failed to send message: ' + error.message);
         }
     }

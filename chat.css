@@ -645,6 +645,55 @@ body {
     color: #c82333;
 }
 
+/* Message file styles */
+.message-files {
+    margin-top: 8px;
+}
+
+.message-file-item {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.message-file-item .file-icon {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+.message-file-item .file-info {
+    flex: 1;
+}
+
+.message-file-item .file-name {
+    font-weight: 500;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.message-file-item .file-size {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.file-download-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.file-download-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .message-input-wrapper {
     display: flex;
     align-items: flex-end;
