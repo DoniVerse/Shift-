@@ -159,8 +159,17 @@
   const auth = getAuth();
 
   onAuthStateChanged(auth, (user) => {
-    if (!user) {
+    console.log('🔍 Firebase Auth State:', user ? 'Signed in' : 'Not signed in');
+
+    // Check if user is signed in through localStorage instead
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+
+    if (!user && !currentUser.email && !employerInfo.email) {
+      console.log('❌ No authentication found, redirecting to signin');
       window.location.href = 'employer-signin.html';
+    } else {
+      console.log('✅ User authenticated via:', user ? 'Firebase' : 'localStorage');
     }
   });
 </script>

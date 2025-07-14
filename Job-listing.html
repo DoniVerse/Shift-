@@ -100,46 +100,73 @@
   });
 </script>
     <script>
-        function selectJobCategory(category) {
+        async function selectJobCategory(category) {
             // Store the selected category
             localStorage.setItem('selectedJobCategory', category);
 
-            // Get all published jobs from localStorage
-            const allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-            console.log('All jobs in localStorage:', allJobs);
-            console.log('Looking for category:', category);
+            // Show loading message
+            const loadingModal = document.createElement('div');
+            loadingModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            loadingModal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h3>🔍 Loading Jobs...</h3>
+                    <p>Fetching jobs from database...</p>
+                </div>
+            `;
+            document.body.appendChild(loadingModal);
 
-            const categoryJobs = allJobs.filter(job => {
-                console.log('Job category:', job.category, 'Target category:', category);
-                return job.category === category;
-            });
+            try {
+                // Get jobs from local manager first (most reliable)
+                console.log('🔍 Fetching jobs from local storage for category:', category);
+                const localJobs = window.localJobsManager.getJobsByCategory(category);
 
-            console.log('Found jobs for category:', categoryJobs);
-
-            if (categoryJobs.length === 0) {
-                // Show debug info
-                const debugInfo = `
-                    No jobs found for category: ${category}
-
-                    Total jobs in storage: ${allJobs.length}
-                    Available categories: ${[...new Set(allJobs.map(job => job.category))].join(', ')}
-
-                    Would you like to see all available jobs for debugging?
-                `;
-
-                if (confirm(debugInfo)) {
-                    // Show all jobs for debugging
-                    if (allJobs.length > 0) {
-                        showCategoryJobs(category, allJobs, true);
-                    } else {
-                        alert('No jobs have been published yet. Employers need to publish jobs first.');
+                // Try to get Firebase jobs as additional source
+                let firebaseJobs = [];
+                try {
+                    if (window.jobManager) {
+                        firebaseJobs = await window.jobManager.getJobsByCategory(category);
                     }
+                } catch (fbError) {
+                    console.log('Firebase not available:', fbError.message);
                 }
-                return;
-            }
 
-            // Show jobs in this category
-            showCategoryJobs(category, categoryJobs);
+                // Combine local and Firebase jobs (remove duplicates)
+                const allJobs = [...localJobs];
+                firebaseJobs.forEach(fbJob => {
+                    if (!localJobs.find(localJob => localJob.title === fbJob.title && localJob.employerEmail === fbJob.employerEmail)) {
+                        allJobs.push(fbJob);
+                    }
+                });
+
+                console.log(`✅ Found ${localJobs.length} local jobs + ${firebaseJobs.length} Firebase jobs = ${allJobs.length} total`);
+
+                // Remove loading modal
+                loadingModal.remove();
+
+                if (allJobs.length === 0) {
+                    alert(`❌ No jobs found for category: ${category}\n\nThis means no employers have published jobs in this category yet.\n\nCategories available:\n• legal-filings (Year 4)\n• document-summary (Year 2)\n• legal-research (Year 3)\n• corporate-advisory (Year 5)\n\nEmployers need to publish jobs first!`);
+                    return;
+                }
+
+                // Show jobs in this category
+                showCategoryJobs(category, allJobs);
+
+            } catch (error) {
+                console.error('❌ Error fetching jobs:', error);
+                loadingModal.remove();
+                alert(`❌ Error loading jobs: ${error.message}\n\nPlease try refreshing the page.`);
+            }
         }
 
         function showCategoryJobs(category, jobs, debugMode = false) {
@@ -239,6 +266,10 @@
         }
     </script>
     <script src="job-listing.js"></script>
+    <!-- Local Jobs Management (Primary) -->
+    <script src="local-jobs-manager.js"></script>
+    <!-- Firebase Jobs Management (Fallback) -->
+    <script type="module" src="firebase-jobs.js"></script>
     <!-- Chat Integration -->
     <script src="chat-integration-widget.js"></script>
     <script src="chat-buttons.js"></script>

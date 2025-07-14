@@ -69,13 +69,22 @@
 
     <script>
         function loadJobs() {
-            const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-            const container = document.getElementById('jobsContainer');
-
             updateStatus(); // Update status when loading jobs
 
+            // Get jobs from new local manager if available
+            let jobs = [];
+            if (window.localJobsManager) {
+                jobs = window.localJobsManager.getAllJobs();
+                console.log('📋 Using Local Jobs Manager');
+            } else {
+                jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                console.log('📋 Using direct localStorage');
+            }
+
+            const container = document.getElementById('jobsContainer');
+
             if (jobs.length === 0) {
-                container.innerHTML = '<p>❌ No jobs found in localStorage</p>';
+                container.innerHTML = '<p>❌ No jobs found</p>';
                 return;
             }
 
@@ -83,10 +92,12 @@
             jobs.forEach((job, index) => {
                 const hasEmployerInfo = job.employerName && job.employerEmail;
                 const statusIcon = hasEmployerInfo ? '✅' : '❌';
+                const source = job.source || 'unknown';
 
                 html += `
                     <div class="job-item" style="border-left: 4px solid ${hasEmployerInfo ? '#28a745' : '#dc3545'};">
                         <h4>${statusIcon} ${job.title}</h4>
+                        <p><strong>ID:</strong> ${job.id || 'No ID'}</p>
                         <p><strong>Category:</strong> ${job.category}</p>
                         <p><strong>Category Title:</strong> ${job.categoryTitle}</p>
                         <p><strong>Employer:</strong> ${job.employerName || '❌ MISSING'}</p>
@@ -94,8 +105,9 @@
                         <p><strong>Description:</strong> ${job.description}</p>
                         <p><strong>Payment:</strong> ${job.paymentCode}</p>
                         <p><strong>Hours:</strong> ${job.expectedHours}</p>
-                        <p><strong>Published:</strong> ${new Date(job.timestamp).toLocaleString()}</p>
-                        <button class="btn clear-btn" onclick="deleteJob(${index})">Delete This Job</button>
+                        <p><strong>Source:</strong> ${source}</p>
+                        <p><strong>Published:</strong> ${job.createdAt ? new Date(job.createdAt).toLocaleString() : new Date(job.timestamp).toLocaleString()}</p>
+                        <button class="btn clear-btn" onclick="deleteJob('${job.id || index}')">Delete This Job</button>
                     </div>
                 `;
             });
@@ -221,13 +233,23 @@
                 email: employerInfo.email || currentUser.email || ''
             };
 
+            // Test all 4 categories that employers can publish to
+            const categories = [
+                { id: 'legal-filings', title: 'Preparing Legal Filings & Case Documents' },
+                { id: 'document-summary', title: 'Summarizing Legal Documents' },
+                { id: 'corporate-advisory', title: 'Corporate Legal Advisory Support' },
+                { id: 'legal-research', title: 'Legal Research Assistance' }
+            ];
+
+            const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+
             const testJob = {
-                title: "Real Test Job - " + new Date().toLocaleTimeString(),
-                description: "This job was created through the debug system",
+                title: `${selectedCategory.title} - Test Job ${new Date().toLocaleTimeString()}`,
+                description: `This is a test job for ${selectedCategory.title.toLowerCase()}. Created through debug system.`,
                 paymentCode: "R600/hour",
                 expectedHours: "15 hours/week",
-                category: "legal-research",
-                categoryTitle: "Legal Research Assistance",
+                category: selectedCategory.id,
+                categoryTitle: selectedCategory.title,
                 employerName: employer.name,
                 employerEmail: employer.email,
                 timestamp: Date.now()
@@ -240,7 +262,7 @@
             jobs.push(testJob);
             localStorage.setItem('jobs', JSON.stringify(jobs));
 
-            alert(`✅ Test job published!\nEmployer: ${employer.name}\nEmail: ${employer.email}`);
+            alert(`✅ Test job published!\nCategory: ${selectedCategory.id}\nTitle: ${selectedCategory.title}\nEmployer: ${employer.name}\nEmail: ${employer.email}\n\nNow test in student view!`);
             loadJobs();
             updateStatus();
         }
@@ -251,5 +273,8 @@
             loadJobs();
         };
     </script>
+
+    <!-- Local Jobs Management -->
+    <script src="local-jobs-manager.js"></script>
 </body>
 </html>

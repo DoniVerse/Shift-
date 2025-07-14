@@ -69,20 +69,36 @@
             const password = document.getElementById('employer-password').value;
             
             if (email && password) {
-                // For demo purposes, create a mock employer user
-                const mockEmployer = {
-                    name: 'Demo Law Firm',
-                    email: email,
-                    userType: 'employer',
-                    type: 'Law Firm'
-                };
+                // Check if employer already exists in localStorage from signup
+                const existingEmployer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
 
-                // Store in both localStorage keys for compatibility
-                localStorage.setItem('currentUser', JSON.stringify(mockEmployer));
-                localStorage.setItem('employerInfo', JSON.stringify(mockEmployer));
+                if (existingEmployer.email === email) {
+                    // Use existing employer data
+                    const employerData = {
+                        ...existingEmployer,
+                        userType: 'employer'
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(employerData));
+                    localStorage.setItem('employerInfo', JSON.stringify(employerData));
 
-                alert(`Welcome back! You have been signed in successfully.`);
-                window.location.href = 'job-catagory.html';
+                    alert(`Welcome back, ${employerData.name}!`);
+                    window.location.href = 'job-catagory.html';
+                } else {
+                    // Create new employer if not found (for demo)
+                    const employerName = prompt('Enter your company name:') || 'Your Company';
+                    const employerData = {
+                        name: employerName,
+                        email: email,
+                        userType: 'employer',
+                        type: 'Law Firm'
+                    };
+
+                    localStorage.setItem('currentUser', JSON.stringify(employerData));
+                    localStorage.setItem('employerInfo', JSON.stringify(employerData));
+
+                    alert(`Welcome, ${employerName}!`);
+                    window.location.href = 'job-catagory.html';
+                }
             } else {
                 alert('Please fill in all required fields');
             }

@@ -91,9 +91,9 @@
             }
         });
 
-        document.getElementById('job-form').addEventListener('submit', function(e) {
+        document.getElementById('job-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const jobTitle = document.getElementById('job-title').value;
             const jobDescription = document.getElementById('job-description').value;
             const paymentCode = document.getElementById('payment-code').value;
@@ -113,44 +113,91 @@
             };
 
             console.log('Employer info:', employer);
-            console.log('EmployerInfo localStorage:', employerInfo);
-            console.log('CurrentUser localStorage:', currentUser);
-
-            // Show debug info to user
-            const debugInfo = `
-🔍 DEBUG INFO:
-Employer Name: ${employer.name || 'MISSING'}
-Employer Email: ${employer.email || 'MISSING'}
-
-From employerInfo: ${employerInfo.name || 'none'} / ${employerInfo.email || 'none'}
-From currentUser: ${currentUser.name || 'none'} / ${currentUser.email || 'none'}
-
-Continue with job publishing?
-            `;
-
-            if (!confirm(debugInfo)) {
-                return;
-            }
 
             if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
-                // Build job object
-                const job = {
-                    title: jobTitle,
-                    description: jobDescription,
-                    paymentCode: paymentCode,
-                    expectedHours: expectedHours,
-                    category: category,
-                    categoryTitle: categoryTitle,
-                    employerName: employer.name || '',
-                    employerEmail: employer.email || '',
-                    timestamp: Date.now()
-                };
-                // Save to localStorage
-                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-                jobs.push(job);
-                localStorage.setItem('jobs', JSON.stringify(jobs));
-                alert(`Job "${jobTitle}" has been published successfully!`);
-                window.location.href = 'job-catagory.html';
+                // Show loading message
+                const submitBtn = document.querySelector('.publish-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Publishing...';
+                submitBtn.disabled = true;
+
+                try {
+                    // Build job object
+                    const job = {
+                        title: jobTitle,
+                        description: jobDescription,
+                        paymentCode: paymentCode,
+                        expectedHours: expectedHours,
+                        category: category,
+                        categoryTitle: categoryTitle,
+                        employerName: employer.name || '',
+                        employerEmail: employer.email || '',
+                        employerId: currentUser.firebaseUid || null
+                    };
+
+                    // Try Firebase first, then fallback to local
+                    let result;
+                    try {
+                        if (window.jobManager) {
+                            console.log('🔥 Attempting Firebase job publishing...');
+                            result = await window.jobManager.publishJob(job);
+                            console.log('🔥 Firebase result:', result);
+                        } else {
+                            throw new Error('Firebase jobManager not available');
+                        }
+                    } catch (firebaseError) {
+                        console.error('🔥 Firebase failed:', firebaseError);
+                        console.error('🔥 Error code:', firebaseError.code);
+                        console.error('🔥 Error message:', firebaseError.message);
+
+                        alert(`⚠️ Firebase Error: ${firebaseError.message}\n\nFalling back to local storage...`);
+
+                        console.log('📱 Using local storage fallback...');
+                        result = window.localJobsManager.publishJob(job);
+                        console.log('📱 Local result:', result);
+                    }
+
+                    if (result.success) {
+                        alert(`✅ Job "${jobTitle}" has been published successfully!\n\nJob ID: ${result.jobId}\nStudents can now see and apply to this job.`);
+                        window.location.href = 'job-catagory.html';
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Error publishing job:', error);
+
+                    let errorMessage = '';
+                    if (error.message.includes('permission') || error.message.includes('insufficient')) {
+                        errorMessage = `🔒 Firebase Permission Error\n\nThis happens because Firebase security rules need to be configured.\n\nFor now, your job will be saved locally and visible on this device.`;
+                    } else {
+                        errorMessage = `❌ Network Error: ${error.message}\n\nYour job will be saved locally.`;
+                    }
+
+                    alert(errorMessage);
+
+                    // Fallback to localStorage
+                    const job = {
+                        title: jobTitle,
+                        description: jobDescription,
+                        paymentCode: paymentCode,
+                        expectedHours: expectedHours,
+                        category: category,
+                        categoryTitle: categoryTitle,
+                        employerName: employer.name || '',
+                        employerEmail: employer.email || '',
+                        timestamp: Date.now(),
+                        source: 'localStorage' // Mark as local
+                    };
+                    const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                    jobs.push(job);
+                    localStorage.setItem('jobs', JSON.stringify(jobs));
+                    alert(`✅ Job "${jobTitle}" has been published locally!\n\nIt will be visible to students on this device.`);
+                    window.location.href = 'job-catagory.html';
+                } finally {
+                    // Reset button
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
             } else {
                 alert('Please fill in all required fields');
             }
@@ -177,5 +224,10 @@ Continue with job publishing?
             });
         });
     </script>
+
+    <!-- Local Jobs Management (Primary) -->
+    <script src="local-jobs-manager.js"></script>
+    <!-- Firebase Jobs Management (Fallback) -->
+    <script type="module" src="firebase-jobs.js"></script>
 </body>
 </html>

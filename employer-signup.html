@@ -148,12 +148,16 @@
                 reg: document.getElementById('employer-reg').value,
                 email: document.getElementById('employer-email').value,
                 phone: document.getElementById('employer-phone').value,
-                logo: logoDataUrl
+                logo: logoDataUrl,
+                userType: 'employer'
             };
+
+            // Store in both localStorage keys for compatibility
             localStorage.setItem('employerInfo', JSON.stringify(employerInfo));
-            // Optionally redirect to profile or show a success message
-            alert('Sign up successful!');
-            // window.location.href = 'employer-profile.html';
+            localStorage.setItem('currentUser', JSON.stringify(employerInfo));
+
+            alert(`Sign up successful! Welcome ${employerInfo.name}!`);
+            window.location.href = 'employer-signin.html';
         });
     </script>
     <!-- Firebase Authentication -->
