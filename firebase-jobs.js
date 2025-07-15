@@ -97,28 +97,35 @@ class JobManager {
     async getJobsByCategory(category) {
         try {
             console.log('🔍 Fetching jobs for category:', category);
-            
+
+            // Simplified query without orderBy to avoid index requirement
             const q = query(
                 collection(this.db, this.jobsCollection),
                 where('category', '==', category),
-                where('status', '==', 'active'),
-                orderBy('createdAt', 'desc')
+                where('status', '==', 'active')
             );
 
             const querySnapshot = await getDocs(q);
             const jobs = [];
-            
+
             querySnapshot.forEach((doc) => {
+                const data = doc.data();
                 jobs.push({
                     id: doc.id,
-                    ...doc.data()
+                    ...data,
+                    // Convert Firestore timestamp to JavaScript date for sorting
+                    createdAt: data.createdAt?.toDate?.() || new Date(data.timestamp || Date.now())
                 });
             });
+
+            // Sort manually by creation date (newest first)
+            jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             console.log(`✅ Found ${jobs.length} jobs for category ${category}`);
             return jobs;
         } catch (error) {
             console.error('❌ Error fetching jobs:', error);
+            console.error('❌ Error details:', error.code, error.message);
             return [];
         }
     }

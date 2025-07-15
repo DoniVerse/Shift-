@@ -127,35 +127,54 @@
             document.body.appendChild(loadingModal);
 
             try {
-                // Get jobs from local manager first (most reliable)
-                console.log('🔍 Fetching jobs from local storage for category:', category);
-                const localJobs = window.localJobsManager.getJobsByCategory(category);
-
-                // Try to get Firebase jobs as additional source
+                // PRIMARY: Get jobs from Firebase (where employers publish them)
+                console.log('🔥 Fetching jobs from Firebase for category:', category);
                 let firebaseJobs = [];
+                let firebaseError = null;
+
                 try {
                     if (window.jobManager) {
                         firebaseJobs = await window.jobManager.getJobsByCategory(category);
+                        console.log(`🔥 Firebase jobs found: ${firebaseJobs.length}`);
+                    } else {
+                        throw new Error('Firebase jobManager not available');
                     }
                 } catch (fbError) {
-                    console.log('Firebase not available:', fbError.message);
+                    console.error('🔥 Firebase error:', fbError);
+                    firebaseError = fbError;
                 }
 
-                // Combine local and Firebase jobs (remove duplicates)
-                const allJobs = [...localJobs];
-                firebaseJobs.forEach(fbJob => {
-                    if (!localJobs.find(localJob => localJob.title === fbJob.title && localJob.employerEmail === fbJob.employerEmail)) {
-                        allJobs.push(fbJob);
+                // FALLBACK: Get jobs from local storage
+                console.log('📱 Checking local storage as fallback...');
+                const localJobs = window.localJobsManager ?
+                    window.localJobsManager.getJobsByCategory(category) :
+                    JSON.parse(localStorage.getItem('jobs') || '[]').filter(job => job.category === category);
+
+                console.log(`📱 Local jobs found: ${localJobs.length}`);
+
+                // Combine Firebase (primary) and local (fallback) jobs
+                const allJobs = [...firebaseJobs];
+                localJobs.forEach(localJob => {
+                    if (!firebaseJobs.find(fbJob => fbJob.title === localJob.title && fbJob.employerEmail === localJob.employerEmail)) {
+                        allJobs.push(localJob);
                     }
                 });
 
-                console.log(`✅ Found ${localJobs.length} local jobs + ${firebaseJobs.length} Firebase jobs = ${allJobs.length} total`);
+                console.log(`✅ Total jobs: ${firebaseJobs.length} Firebase + ${localJobs.length} local = ${allJobs.length} total`);
 
                 // Remove loading modal
                 loadingModal.remove();
 
                 if (allJobs.length === 0) {
-                    alert(`❌ No jobs found for category: ${category}\n\nThis means no employers have published jobs in this category yet.\n\nCategories available:\n• legal-filings (Year 4)\n• document-summary (Year 2)\n• legal-research (Year 3)\n• corporate-advisory (Year 5)\n\nEmployers need to publish jobs first!`);
+                    let errorMessage = `❌ No jobs found for category: ${category}\n\n`;
+
+                    if (firebaseError) {
+                        errorMessage += `🔥 Firebase Error: ${firebaseError.message}\n\n`;
+                    }
+
+                    errorMessage += `This could mean:\n• No employers have published jobs in this category yet\n• Network connection issues\n• Firebase permission problems\n\nCategories:\n• legal-filings (Year 4)\n• document-summary (Year 2)\n• legal-research (Year 3)\n• corporate-advisory (Year 5)`;
+
+                    alert(errorMessage);
                     return;
                 }
 

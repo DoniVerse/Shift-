@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #d17e7e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #c16868;
+        }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Complete Job Flow Test</h1>
+        
+        <div class="section">
+            <h3>📝 Step 1: Publish Job as Employer</h3>
+            <button class="btn" onclick="simulateEmployerPublish()">🏢 Publish Test Job</button>
+            <div id="publishLog" class="log">Click button to publish a test job...</div>
+        </div>
+        
+        <div class="section">
+            <h3>👁️ Step 2: View Jobs as Student</h3>
+            <label>Student Year: 
+                <select id="studentYear">
+                    <option value="2">Year 2 (document-summary)</option>
+                    <option value="3" selected>Year 3 (legal-research)</option>
+                    <option value="4">Year 4 (legal-filings)</option>
+                    <option value="5">Year 5 (corporate-advisory)</option>
+                </select>
+            </label>
+            <button class="btn" onclick="simulateStudentView()">🎓 View Jobs as Student</button>
+            <div id="studentLog" class="log">Click button to view jobs as student...</div>
+        </div>
+        
+        <div class="section">
+            <h3>🔍 Step 3: Debug Information</h3>
+            <button class="btn" onclick="showDebugInfo()">🔍 Show All Debug Info</button>
+            <div id="debugLog" class="log">Click button to see debug information...</div>
+        </div>
+    </div>
+
+    <script src="local-jobs-manager.js"></script>
+    <script>
+        function log(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            container.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function simulateEmployerPublish() {
+            const publishLog = document.getElementById('publishLog');
+            publishLog.innerHTML = '';
+            
+            log('publishLog', '🏢 Starting employer job publishing simulation...', 'info');
+            
+            // Simulate employer login
+            const employerData = {
+                name: 'Test Law Firm',
+                email: 'test@lawfirm.com',
+                userType: 'employer'
+            };
+            localStorage.setItem('currentUser', JSON.stringify(employerData));
+            localStorage.setItem('employerInfo', JSON.stringify(employerData));
+            log('publishLog', '✅ Employer logged in: ' + employerData.name, 'success');
+            
+            // Create test job
+            const testJob = {
+                title: 'Legal Research Assistant Position',
+                description: 'Help with legal research and case analysis',
+                paymentCode: 'R500/hour',
+                expectedHours: '20 hours/week',
+                category: 'legal-research',
+                categoryTitle: 'Legal Research Assistance',
+                employerName: employerData.name,
+                employerEmail: employerData.email
+            };
+            
+            log('publishLog', '📝 Publishing job: ' + testJob.title, 'info');
+            log('publishLog', '📝 Category: ' + testJob.category, 'info');
+            log('publishLog', '📝 Employer: ' + testJob.employerName, 'info');
+            
+            // Publish using local jobs manager
+            if (window.localJobsManager) {
+                const result = window.localJobsManager.publishJob(testJob);
+                if (result.success) {
+                    log('publishLog', '✅ Job published successfully! ID: ' + result.jobId, 'success');
+                } else {
+                    log('publishLog', '❌ Failed to publish job: ' + result.error, 'error');
+                }
+            } else {
+                log('publishLog', '❌ Local Jobs Manager not available!', 'error');
+            }
+            
+            // Show current jobs count
+            const allJobs = window.localJobsManager ? window.localJobsManager.getAllJobs() : [];
+            log('publishLog', '📊 Total jobs in system: ' + allJobs.length, 'info');
+        }
+
+        function simulateStudentView() {
+            const studentLog = document.getElementById('studentLog');
+            studentLog.innerHTML = '';
+            
+            const studentYear = parseInt(document.getElementById('studentYear').value);
+            
+            log('studentLog', '🎓 Starting student job viewing simulation...', 'info');
+            log('studentLog', '🎓 Student Year: ' + studentYear, 'info');
+            
+            // Simulate student login
+            const studentData = {
+                name: 'Test Student',
+                email: 'student@university.edu',
+                yearOfStudy: studentYear,
+                userType: 'student'
+            };
+            localStorage.setItem('currentUser', JSON.stringify(studentData));
+            log('studentLog', '✅ Student logged in: ' + studentData.name + ' (Year ' + studentYear + ')', 'success');
+            
+            // Map year to category (same as job-listing.js)
+            const yearToCategory = {
+                2: 'document-summary',
+                3: 'legal-research',
+                4: 'legal-filings',
+                5: 'corporate-advisory'
+            };
+            const category = yearToCategory[studentYear];
+            log('studentLog', '🔍 Looking for jobs in category: ' + category, 'info');
+            
+            // Get jobs using same method as job-listing.js
+            let allJobs = [];
+            if (window.localJobsManager) {
+                allJobs = window.localJobsManager.getAllJobs();
+                log('studentLog', '✅ Using Local Jobs Manager', 'success');
+            } else {
+                allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                log('studentLog', '⚠️ Using direct localStorage', 'info');
+            }
+            
+            log('studentLog', '📊 Total jobs found: ' + allJobs.length, 'info');
+            
+            // Filter jobs by category
+            const categoryJobs = allJobs.filter(job => {
+                log('studentLog', `🔍 Job: "${job.title}" | Category: "${job.category}" | Match: ${job.category === category}`, 'info');
+                return job.category === category;
+            });
+            
+            log('studentLog', '✅ Jobs for this student: ' + categoryJobs.length, categoryJobs.length > 0 ? 'success' : 'error');
+            
+            if (categoryJobs.length > 0) {
+                categoryJobs.forEach((job, index) => {
+                    log('studentLog', `📄 Job ${index + 1}: ${job.title} by ${job.employerName}`, 'success');
+                });
+            } else {
+                log('studentLog', '❌ No jobs found for this category!', 'error');
+                log('studentLog', '💡 Available categories: ' + [...new Set(allJobs.map(job => job.category))].join(', '), 'info');
+            }
+        }
+
+        function showDebugInfo() {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.innerHTML = '';
+            
+            log('debugLog', '🔍 Complete System Debug Information', 'info');
+            
+            // Check local jobs manager
+            if (window.localJobsManager) {
+                log('debugLog', '✅ Local Jobs Manager: Available', 'success');
+                const stats = window.localJobsManager.getStats();
+                log('debugLog', '📊 Total Jobs: ' + stats.totalJobs, 'info');
+                log('debugLog', '📊 Active Jobs: ' + stats.activeJobs, 'info');
+                log('debugLog', '📊 Categories: ' + stats.categories.join(', '), 'info');
+                log('debugLog', '📊 Employers: ' + stats.employers.join(', '), 'info');
+            } else {
+                log('debugLog', '❌ Local Jobs Manager: Not Available', 'error');
+            }
+            
+            // Check localStorage
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+            const directJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+            
+            log('debugLog', '👤 Current User: ' + (currentUser.name || 'None'), 'info');
+            log('debugLog', '🏢 Employer Info: ' + (employerInfo.name || 'None'), 'info');
+            log('debugLog', '📊 Direct localStorage Jobs: ' + directJobs.length, 'info');
+            
+            // Show all jobs with details
+            const allJobs = window.localJobsManager ? window.localJobsManager.getAllJobs() : directJobs;
+            log('debugLog', '📋 All Jobs Details:', 'info');
+            allJobs.forEach((job, index) => {
+                log('debugLog', `  ${index + 1}. "${job.title}" | Category: ${job.category} | Employer: ${job.employerName}`, 'info');
+            });
+        }
+
+        // Auto-run debug on page load
+        window.addEventListener('load', () => {
+            setTimeout(showDebugInfo, 1000);
+        });
+    </script>
+</body>
+</html>

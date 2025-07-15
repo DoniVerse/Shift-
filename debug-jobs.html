@@ -53,6 +53,7 @@
             <button class="btn" onclick="loadJobs()">🔄 Refresh Jobs</button>
             <button class="btn" onclick="showUserInfo()">👤 Show User Info</button>
             <button class="btn" onclick="testJobPublishing()">📝 Test Job Publishing</button>
+            <button class="btn" onclick="compareJobSources()">🔍 Compare Job Sources</button>
             <button class="btn clear-btn" onclick="clearJobs()">🗑️ Clear All Jobs</button>
             <button class="btn" onclick="simulateEmployerLogin()">🏢 Simulate Employer Login</button>
         </div>
@@ -243,6 +244,7 @@
 
             const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
 
+            // Use the local jobs manager if available
             const testJob = {
                 title: `${selectedCategory.title} - Test Job ${new Date().toLocaleTimeString()}`,
                 description: `This is a test job for ${selectedCategory.title.toLowerCase()}. Created through debug system.`,
@@ -251,20 +253,70 @@
                 category: selectedCategory.id,
                 categoryTitle: selectedCategory.title,
                 employerName: employer.name,
-                employerEmail: employer.email,
-                timestamp: Date.now()
+                employerEmail: employer.email
             };
 
             console.log('🔍 Creating job with employer info:', employer);
             console.log('🔍 Job object:', testJob);
 
-            const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-            jobs.push(testJob);
-            localStorage.setItem('jobs', JSON.stringify(jobs));
+            let result;
+            if (window.localJobsManager) {
+                result = window.localJobsManager.publishJob(testJob);
+            } else {
+                // Fallback to direct localStorage
+                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                testJob.id = 'test_' + Date.now();
+                testJob.timestamp = Date.now();
+                testJob.source = 'debug';
+                jobs.push(testJob);
+                localStorage.setItem('jobs', JSON.stringify(jobs));
+                result = { success: true, jobId: testJob.id };
+            }
 
-            alert(`✅ Test job published!\nCategory: ${selectedCategory.id}\nTitle: ${selectedCategory.title}\nEmployer: ${employer.name}\nEmail: ${employer.email}\n\nNow test in student view!`);
+            if (result.success) {
+                alert(`✅ Test job published!\nJob ID: ${result.jobId}\nCategory: ${selectedCategory.id}\nTitle: ${selectedCategory.title}\nEmployer: ${employer.name}\nEmail: ${employer.email}\n\nNow test in student view!`);
+            } else {
+                alert(`❌ Failed to publish test job: ${result.error}`);
+            }
+
             loadJobs();
             updateStatus();
+        }
+
+        function compareJobSources() {
+            const jobs = window.localJobsManager ? window.localJobsManager.getAllJobs() : JSON.parse(localStorage.getItem('jobs') || '[]');
+
+            const testJobs = jobs.filter(job => job.source === 'debug' || job.title.includes('Test Job'));
+            const realJobs = jobs.filter(job => job.source === 'local' && !job.title.includes('Test Job'));
+
+            const container = document.getElementById('jobsContainer');
+            container.innerHTML = `
+                <h3>📊 Job Sources Comparison</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>🧪 Test Jobs (${testJobs.length})</h4>
+                        ${testJobs.map(job => `
+                            <div class="job-item" style="border-left: 4px solid #28a745;">
+                                <strong>${job.title}</strong><br>
+                                Category: ${job.category}<br>
+                                Employer: ${job.employerName}<br>
+                                Source: ${job.source || 'unknown'}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div>
+                        <h4>👥 Real User Jobs (${realJobs.length})</h4>
+                        ${realJobs.map(job => `
+                            <div class="job-item" style="border-left: 4px solid ${job.employerName ? '#28a745' : '#dc3545'};">
+                                <strong>${job.title}</strong><br>
+                                Category: ${job.category}<br>
+                                Employer: ${job.employerName || '❌ MISSING'}<br>
+                                Source: ${job.source || 'unknown'}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
         }
 
         // Load jobs and status on page load

@@ -88,6 +88,24 @@
             if (user.userType !== 'employer') {
                 alert('Access denied. Only employers can access this page.');
                 window.location.href = 'student-profile.html';
+                return;
+            }
+
+            // Debug: Show URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get('category') || '';
+            const categoryTitle = urlParams.get('title') || '';
+
+            console.log('🔍 Add-job page loaded');
+            console.log('🔍 URL parameters:', { category, categoryTitle });
+            console.log('🔍 Current user:', user);
+            console.log('🔍 Employer info:', JSON.parse(localStorage.getItem('employerInfo') || '{}'));
+
+            // Show debug info to user
+            if (category && categoryTitle) {
+                document.querySelector('.page-title').innerHTML = `Add Job Details<br><small style="color: #666; font-size: 14px;">Category: ${categoryTitle}</small>`;
+            } else {
+                alert('⚠️ Warning: No job category selected. Please go back and select a category first.');
             }
         });
 
@@ -112,7 +130,30 @@
                 email: employerInfo.email || currentUser.email || ''
             };
 
-            console.log('Employer info:', employer);
+            console.log('🔍 Job submission data:');
+            console.log('📝 Title:', jobTitle);
+            console.log('📝 Description:', jobDescription);
+            console.log('📝 Payment:', paymentCode);
+            console.log('📝 Hours:', expectedHours);
+            console.log('📝 Category:', category);
+            console.log('📝 Category Title:', categoryTitle);
+            console.log('👤 Employer info:', employer);
+
+            // Show debug alert to user
+            const debugInfo = `
+🔍 JOB SUBMISSION DEBUG:
+Title: ${jobTitle}
+Category: ${category}
+Category Title: ${categoryTitle}
+Employer: ${employer.name || 'MISSING'}
+Email: ${employer.email || 'MISSING'}
+
+Continue with publishing?
+            `;
+
+            if (!confirm(debugInfo)) {
+                return;
+            }
 
             if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
                 // Show loading message

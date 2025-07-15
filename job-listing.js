@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Display jobs based on year
-    function displayJobs() {
+    async function displayJobs() {
         const userData = getUserData();
         const jobsGrid = document.getElementById('jobsGrid');
         const noJobsMessage = document.getElementById('noJobsMessage');
@@ -167,9 +167,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const userYear = parseInt(userData.yearOfStudy) || 2;
         const category = yearToCategory[userYear];
 
-        // Get jobs from localStorage
-        const allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-        const jobs = allJobs.filter(job => job.category === category);
+        // PRIMARY: Get jobs from Firebase (where employers publish them)
+        console.log('🔥 Student looking for Firebase jobs in category:', category);
+
+        let jobs = [];
+
+        // Try Firebase first
+        try {
+            if (window.jobManager) {
+                console.log('🔥 Fetching from Firebase...');
+                const firebaseJobs = await window.jobManager.getJobsByCategory(category);
+                jobs = firebaseJobs;
+                console.log('🔥 Firebase jobs found:', jobs.length);
+            } else {
+                throw new Error('Firebase not available');
+            }
+        } catch (firebaseError) {
+            console.error('🔥 Firebase error, using fallback:', firebaseError);
+
+            // Fallback to local storage
+            let allJobs = [];
+            if (window.localJobsManager) {
+                console.log('📱 Using Local Jobs Manager fallback');
+                allJobs = window.localJobsManager.getAllJobs();
+            } else {
+                console.log('📱 Using direct localStorage fallback');
+                allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+            }
+
+            jobs = allJobs.filter(job => {
+                console.log(`🔍 Checking job: ${job.title} | Category: ${job.category} | Looking for: ${category}`);
+                return job.category === category;
+            });
+        }
+
+        console.log('✅ Final jobs for student:', jobs.length, jobs);
 
         // If no jobs posted by employers, fallback to static
         let jobsToShow = jobs;

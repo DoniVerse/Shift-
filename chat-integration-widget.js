@@ -427,7 +427,7 @@ class ChatWidget {
             {
                 id: '1',
                 name: 'John Smith',
-                avatar: 'https://via.placeholder.com/40x40/5a3e5d/ffffff?text=JS',
+                avatar: 'data:image/svg+xml;base64,' + btoa(`<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="#5a3e5d"/><text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="14">JS</text></svg>`),
                 lastMessage: 'Thanks for the interview opportunity!',
                 time: '2m ago',
                 unread: 2
@@ -435,7 +435,7 @@ class ChatWidget {
             {
                 id: '2',
                 name: 'Sarah Johnson',
-                avatar: 'https://via.placeholder.com/40x40/d17e7e/ffffff?text=SJ',
+                avatar: 'data:image/svg+xml;base64,' + btoa(`<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="#d17e7e"/><text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="14">SJ</text></svg>`),
                 lastMessage: 'When can we schedule the next meeting?',
                 time: '1h ago',
                 unread: 0
