@@ -167,6 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const userYear = parseInt(userData.yearOfStudy) || 2;
         const category = yearToCategory[userYear];
 
+        // Debug student filtering
+        console.log('🎓 STUDENT FILTERING DEBUG:');
+        console.log('🎓 Student data:', userData);
+        console.log('🎓 Student year:', userYear);
+        console.log('🎓 Category for this year:', category);
+        console.log('🎓 Available categories:', Object.values(yearToCategory));
+
         // PRIMARY: Get jobs from Firebase (where employers publish them)
         console.log('🔥 Student looking for Firebase jobs in category:', category);
 
@@ -215,11 +222,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!jobsToShow.length) {
             jobsGrid.style.display = 'none';
             noJobsMessage.style.display = 'block';
+
+            const categoryTitles = {
+                'document-summary': 'Summarizing Legal Documents',
+                'legal-research': 'Legal Research Assistance',
+                'legal-filings': 'Preparing Legal Filings & Case Documents',
+                'corporate-advisory': 'Corporate Legal Advisory Support'
+            };
+
             noJobsMessage.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <h3>No jobs available for Year ${userYear}</h3>
-                    <p>Jobs are available for years 2, 3, 4, and 5.</p>
-                    <p>Your current year: ${userYear}</p>
+                    <h3>🎓 No Jobs Available for Year ${userYear} Students</h3>
+                    <p><strong>Your Category:</strong> ${categoryTitles[category] || category}</p>
+                    <p><strong>Category ID:</strong> ${category}</p>
+                    <hr style="margin: 20px 0; border: 1px solid #eee;">
+                    <p>📋 <strong>Year-to-Category Mapping:</strong></p>
+                    <ul style="text-align: left; display: inline-block;">
+                        <li>Year 2 → Summarizing Legal Documents</li>
+                        <li>Year 3 → Legal Research Assistance</li>
+                        <li>Year 4 → Preparing Legal Filings & Case Documents</li>
+                        <li>Year 5 → Corporate Legal Advisory Support</li>
+                    </ul>
+                    <p>💼 Employers need to publish jobs in the <strong>"${categoryTitles[category]}"</strong> category for you to see them.</p>
                 </div>
             `;
             return;
@@ -227,6 +251,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         jobsGrid.style.display = 'grid';
         noJobsMessage.style.display = 'none';
+
+        // Update page title to show filtering info
+        const pageTitle = document.querySelector('.page-title');
+        if (pageTitle) {
+            const categoryTitles = {
+                'document-summary': 'Summarizing Legal Documents',
+                'legal-research': 'Legal Research Assistance',
+                'legal-filings': 'Preparing Legal Filings & Case Documents',
+                'corporate-advisory': 'Corporate Legal Advisory Support'
+            };
+            pageTitle.innerHTML = `Available Jobs<br><small style="color: #666; font-size: 14px;">🎓 Year ${userYear} Student - ${categoryTitles[category] || category} (${jobsToShow.length} jobs)</small>`;
+        }
 
         jobsToShow.forEach(job => {
             const jobCard = document.createElement('div');
@@ -462,4 +498,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Refresh to show the demo data
         location.reload();
     }
+
+    // Add year selector for testing
+    addYearSelector();
+
+    function addYearSelector() {
+        const container = document.querySelector('.container');
+        if (container) {
+            const yearSelector = document.createElement('div');
+            yearSelector.style.cssText = `
+                background: #f8f9fa;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 8px;
+                border: 1px solid #dee2e6;
+                text-align: center;
+            `;
+            yearSelector.innerHTML = `
+                <label style="margin-right: 10px; font-weight: 600;">🧪 Test as Different Year:</label>
+                <select id="yearSelect" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc;">
+                    <option value="2">Year 2 (Document Summary)</option>
+                    <option value="3" selected>Year 3 (Legal Research)</option>
+                    <option value="4">Year 4 (Legal Filings)</option>
+                    <option value="5">Year 5 (Corporate Advisory)</option>
+                </select>
+                <button onclick="changeStudentYear()" style="margin-left: 10px; padding: 8px 16px; background: #d17e7e; color: white; border: none; border-radius: 5px; cursor: pointer;">Apply</button>
+            `;
+            container.insertBefore(yearSelector, container.firstChild);
+        }
+    }
+
+    window.changeStudentYear = function() {
+        const yearSelect = document.getElementById('yearSelect');
+        const newYear = parseInt(yearSelect.value);
+
+        // Update current user data
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        currentUser.yearOfStudy = newYear;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+        // Refresh jobs
+        displayJobs();
+    };
 });

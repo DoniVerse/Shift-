@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Category Filtering</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #d17e7e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #c16868;
+        }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Category Filtering</h1>
+        <p>This will publish test jobs in all 4 categories so you can test the student filtering.</p>
+        
+        <div class="section">
+            <h3>📝 Step 1: Publish Test Jobs in All Categories</h3>
+            <button class="btn" onclick="publishTestJobs()">🚀 Publish Test Jobs</button>
+            <div id="publishLog" class="log">Click button to publish test jobs in all categories...</div>
+        </div>
+        
+        <div class="section">
+            <h3>🎓 Step 2: Test Student Views</h3>
+            <p>After publishing jobs, test these links:</p>
+            <a href="Job-listing.html" target="_blank" class="btn">📖 Open Student Job View</a>
+            <p><small>Use the year selector on the student page to test different years and see how jobs are filtered.</small></p>
+        </div>
+        
+        <div class="section">
+            <h3>🔍 Step 3: Debug Information</h3>
+            <button class="btn" onclick="showJobsByCategory()">📊 Show Jobs by Category</button>
+            <div id="debugLog" class="log">Click button to see jobs organized by category...</div>
+        </div>
+    </div>
+
+    <script src="local-jobs-manager.js"></script>
+    <script type="module" src="firebase-jobs.js"></script>
+    <script>
+        function log(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            container.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function publishTestJobs() {
+            const publishLog = document.getElementById('publishLog');
+            publishLog.innerHTML = '';
+            
+            log('publishLog', '🚀 Starting test job publishing...', 'info');
+            
+            // Set up employer
+            const employerData = {
+                name: 'Test Law Firm',
+                email: 'test@lawfirm.com',
+                userType: 'employer'
+            };
+            localStorage.setItem('currentUser', JSON.stringify(employerData));
+            localStorage.setItem('employerInfo', JSON.stringify(employerData));
+            
+            // Define test jobs for each category
+            const testJobs = [
+                {
+                    title: 'Document Summary Assistant',
+                    description: 'Help summarize legal documents and contracts for our clients.',
+                    paymentCode: 'R400/hour',
+                    expectedHours: '15 hours/week',
+                    category: 'document-summary',
+                    categoryTitle: 'Summarizing Legal Documents'
+                },
+                {
+                    title: 'Legal Research Intern',
+                    description: 'Conduct research on case law and legal precedents.',
+                    paymentCode: 'R500/hour',
+                    expectedHours: '20 hours/week',
+                    category: 'legal-research',
+                    categoryTitle: 'Legal Research Assistance'
+                },
+                {
+                    title: 'Legal Filing Assistant',
+                    description: 'Prepare and organize legal filings and case documents.',
+                    paymentCode: 'R600/hour',
+                    expectedHours: '25 hours/week',
+                    category: 'legal-filings',
+                    categoryTitle: 'Preparing Legal Filings & Case Documents'
+                },
+                {
+                    title: 'Corporate Advisory Support',
+                    description: 'Assist with corporate legal matters and compliance issues.',
+                    paymentCode: 'R700/hour',
+                    expectedHours: '30 hours/week',
+                    category: 'corporate-advisory',
+                    categoryTitle: 'Corporate Legal Advisory Support'
+                }
+            ];
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const job of testJobs) {
+                try {
+                    log('publishLog', `📝 Publishing: ${job.title} (${job.category})`, 'info');
+                    
+                    const jobData = {
+                        ...job,
+                        employerName: employerData.name,
+                        employerEmail: employerData.email
+                    };
+                    
+                    // Try Firebase first, then local
+                    let result;
+                    try {
+                        if (window.jobManager) {
+                            result = await window.jobManager.publishJob(jobData);
+                        } else {
+                            throw new Error('Firebase not available');
+                        }
+                    } catch (fbError) {
+                        log('publishLog', `⚠️ Firebase failed for ${job.title}, using local storage`, 'info');
+                        result = window.localJobsManager.publishJob(jobData);
+                    }
+                    
+                    if (result.success) {
+                        log('publishLog', `✅ ${job.title} published successfully!`, 'success');
+                        successCount++;
+                    } else {
+                        log('publishLog', `❌ Failed to publish ${job.title}: ${result.error}`, 'error');
+                        errorCount++;
+                    }
+                    
+                } catch (error) {
+                    log('publishLog', `❌ Error publishing ${job.title}: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+            
+            log('publishLog', `\n🎉 Publishing complete!`, 'success');
+            log('publishLog', `✅ Success: ${successCount} jobs`, 'success');
+            log('publishLog', `❌ Errors: ${errorCount} jobs`, errorCount > 0 ? 'error' : 'info');
+            log('publishLog', `\n📖 Now open the Student Job View to test filtering!`, 'info');
+        }
+
+        async function showJobsByCategory() {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.innerHTML = '';
+            
+            log('debugLog', '📊 Analyzing jobs by category...', 'info');
+            
+            // Get all jobs
+            let allJobs = [];
+            try {
+                if (window.jobManager) {
+                    allJobs = await window.jobManager.getAllJobs();
+                    log('debugLog', `🔥 Firebase jobs: ${allJobs.length}`, 'info');
+                }
+            } catch (error) {
+                log('debugLog', `⚠️ Firebase error: ${error.message}`, 'info');
+            }
+            
+            // Also get local jobs
+            const localJobs = window.localJobsManager ? window.localJobsManager.getAllJobs() : [];
+            log('debugLog', `📱 Local jobs: ${localJobs.length}`, 'info');
+            
+            // Combine and deduplicate
+            const combinedJobs = [...allJobs];
+            localJobs.forEach(localJob => {
+                if (!allJobs.find(job => job.title === localJob.title && job.employerEmail === localJob.employerEmail)) {
+                    combinedJobs.push(localJob);
+                }
+            });
+            
+            log('debugLog', `📊 Total unique jobs: ${combinedJobs.length}`, 'info');
+            
+            // Group by category
+            const categories = {
+                'document-summary': [],
+                'legal-research': [],
+                'legal-filings': [],
+                'corporate-advisory': []
+            };
+            
+            combinedJobs.forEach(job => {
+                if (categories[job.category]) {
+                    categories[job.category].push(job);
+                }
+            });
+            
+            log('debugLog', '\n📋 Jobs by Category:', 'info');
+            Object.entries(categories).forEach(([category, jobs]) => {
+                const categoryTitles = {
+                    'document-summary': 'Summarizing Legal Documents (Year 2)',
+                    'legal-research': 'Legal Research Assistance (Year 3)',
+                    'legal-filings': 'Preparing Legal Filings & Case Documents (Year 4)',
+                    'corporate-advisory': 'Corporate Legal Advisory Support (Year 5)'
+                };
+                
+                log('debugLog', `\n${categoryTitles[category]}: ${jobs.length} jobs`, jobs.length > 0 ? 'success' : 'info');
+                jobs.forEach(job => {
+                    log('debugLog', `  • ${job.title} by ${job.employerName}`, 'info');
+                });
+            });
+        }
+    </script>
+</body>
+</html>
