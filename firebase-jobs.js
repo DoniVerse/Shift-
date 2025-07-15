@@ -10,6 +10,7 @@ import {
     orderBy, 
     serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -25,6 +26,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Job Management Functions
 class JobManager {
@@ -32,10 +34,21 @@ class JobManager {
         this.db = db;
         this.jobsCollection = 'jobs';
         this.applicationsCollection = 'applications';
+        this.auth = auth;
+        this.currentUser = null;
+
+        onAuthStateChanged(this.auth, (user) => {
+            this.currentUser = user;
+            console.log('🔐 Auth state changed:', user ? `Logged in as ${user.email}` : 'Not logged in');
+        });
     }
 
     // Publish a new job
     async publishJob(jobData) {
+        if (!this.currentUser) {
+            throw new Error('User must be authenticated to publish jobs');
+        }
+
         try {
             console.log('📝 Publishing job to Firebase:', jobData);
             console.log('🔍 Firebase config:', this.db.app.options);
@@ -49,7 +62,7 @@ class JobManager {
                 categoryTitle: jobData.categoryTitle,
                 employerName: jobData.employerName,
                 employerEmail: jobData.employerEmail,
-                employerId: jobData.employerId || null,
+                employerId: this.currentUser.uid,
                 status: 'active',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
