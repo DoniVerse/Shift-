@@ -7,6 +7,24 @@
     <link rel="stylesheet" href="job-listing.css">
 </head>
 <body>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+      import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+      import { getFirestore } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+      const firebaseConfig = {
+        apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+        authDomain: "shift-3140e.firebaseapp.com",
+        projectId: "shift-3140e",
+        storageBucket: "shift-3140e.firebasestorage.app",
+        messagingSenderId: "716245939154",
+        appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+        measurementId: "G-F6WJ0T3E71"
+      };
+      const app = initializeApp(firebaseConfig);
+      window.firebaseApp = app;
+      window.firebaseAuth = getAuth(app);
+      window.firebaseDb = getFirestore(app);
+    </script>
     <div class="container">
         <div class="header">
             <div class="logo">S</div>

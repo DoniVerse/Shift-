@@ -387,20 +387,50 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.style.display = 'none';
         };
         // Apply button
-        document.getElementById('applyJobBtn').onclick = function() {
-            // Save application to localStorage (optional)
+        document.getElementById('applyJobBtn').onclick = async function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
-            applications.push({
+            const firebaseUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : '';
+            console.log('window.firebaseAuth:', window.firebaseAuth);
+            console.log('window.firebaseAuth.currentUser:', window.firebaseAuth && window.firebaseAuth.currentUser);
+            if (!firebaseUid) {
+                alert('You must be signed in to apply. Please log in again.');
+                return;
+            }
+            const application = {
+                jobId: job.id,
                 jobTitle: job.title,
-                company: job.employerName || '',
-                dateApplied: new Date().toLocaleDateString(),
-                status: 'Applied',
-                student: user.email || ''
-            });
-            localStorage.setItem('jobApplications', JSON.stringify(applications));
-            alert('Application submitted!');
-            modal.style.display = 'none';
+                jobCategory: job.category || job.categoryTitle || '',
+                employerName: job.employerName || '',
+                employerEmail: job.employerEmail || '',
+                employerId: job.employerId || '',
+                studentName: user.name || '',
+                studentEmail: user.email || '',
+                studentYear: user.yearOfStudy || '',
+                studentUniversity: user.university || '',
+                studentDepartment: user.department || '',
+                studentId: firebaseUid, // Use actual Firebase UID
+                status: 'applied',
+                appliedAt: new Date().toISOString()
+            };
+            // Debug logging
+            console.log('Submitting application:', application);
+            console.log('Current Firebase UID:', firebaseUid);
+            console.log('Auth user:', window.firebaseAuth && window.firebaseAuth.currentUser);
+            try {
+                if (window.jobManager && window.jobManager.submitApplication) {
+                    const result = await window.jobManager.submitApplication(application);
+                    if (result.success) {
+                        alert('Application submitted!');
+                        modal.style.display = 'none';
+                    } else {
+                        alert('Failed to apply: ' + (result.error || 'Unknown error'));
+                    }
+                } else {
+                    alert('Job manager not available.');
+                }
+            } catch (e) {
+                alert('Failed to apply: ' + e.message);
+            }
         };
         modal.style.display = 'flex';
     }

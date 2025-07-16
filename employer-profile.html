@@ -186,23 +186,28 @@
             showModal('Job Postings', content);
         }
 
-        function viewApplications() {
-            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
-            const currentEmployer = employerInfo || {};
-
-            // Filter applications for this employer
-            const myApplications = applications.filter(app =>
-                app.employerEmail === currentEmployer.email ||
-                app.employerName === currentEmployer.name
-            );
-
-            if (myApplications.length === 0) {
+        async function viewApplications() {
+            if (!employerInfo || !employerInfo.email) {
+                showModal('Job Applications', '<p>Employer info not found.</p>');
+                return;
+            }
+            // Show loading
+            showModal('Job Applications', '<p>Loading applications...</p>');
+            let applications = [];
+            try {
+                if (window.jobManager && window.jobManager.getApplicationsByEmployer) {
+                    applications = await window.jobManager.getApplicationsByEmployer(employerInfo.email);
+                }
+            } catch (e) {
+                showModal('Job Applications', '<p>Failed to load applications: ' + e.message + '</p>');
+                return;
+            }
+            if (!applications.length) {
                 showModal('Job Applications', '<p>No applications received yet.</p>');
                 return;
             }
-
             let applicationsHTML = '<div style="max-height: 400px; overflow-y: auto;">';
-            myApplications.forEach((app, index) => {
+            applications.forEach((app, index) => {
                 applicationsHTML += `
                     <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;">
                         <h4>${app.jobTitle}</h4>
@@ -211,21 +216,23 @@
                         <p><strong>University:</strong> ${app.studentUniversity}</p>
                         <p><strong>Year of Study:</strong> ${app.studentYear}</p>
                         <p><strong>Department:</strong> ${app.studentDepartment}</p>
-                        <p><strong>Applied:</strong> ${new Date(app.appliedAt).toLocaleDateString()}</p>
+                        <p><strong>Applied:</strong> ${app.createdAt && app.createdAt.toDate ? app.createdAt.toDate().toLocaleDateString() : (app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : '')}</p>
                         <p><strong>Status:</strong> <span style="color: green;">${app.status}</span></p>
                         <div style="margin-top: 10px;">
                             <button onclick="contactStudent('${app.studentEmail}', '${app.studentName}')" style="background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                                 Contact Student
                             </button>
-                            <button onclick="updateApplicationStatus(${index}, 'Reviewed')" style="background: #5a3e5d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                                Mark as Reviewed
+                            <button onclick="updateApplicationStatusFirestore('${app.id}', 'accepted')" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                                Accept
+                            </button>
+                            <button onclick="updateApplicationStatusFirestore('${app.id}', 'rejected')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Reject
                             </button>
                         </div>
                     </div>
                 `;
             });
             applicationsHTML += '</div>';
-
             showModal('Job Applications', applicationsHTML);
         }
 
@@ -235,13 +242,19 @@
             window.open(`mailto:${email}?subject=${subject}&body=${body}`);
         }
 
-        function updateApplicationStatus(index, status) {
-            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
-            if (applications[index]) {
-                applications[index].status = status;
-                localStorage.setItem('jobApplications', JSON.stringify(applications));
-                alert(`Application status updated to: ${status}`);
-                viewApplications(); // Refresh the view
+        async function updateApplicationStatusFirestore(appId, status) {
+            if (!window.jobManager || !window.jobManager.applicationsCollection) {
+                alert('Job manager not available.');
+                return;
+            }
+            try {
+                const db = window.jobManager.db;
+                const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                await updateDoc(doc(db, window.jobManager.applicationsCollection, appId), { status });
+                alert('Application status updated to: ' + status);
+                viewApplications(); // Refresh
+            } catch (e) {
+                alert('Failed to update status: ' + e.message);
             }
         }
 
@@ -269,5 +282,27 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
     <!-- Chat Widget Integration -->
     <script src="chat-integration-widget.js"></script>
+    <!-- Job Applications Section -->
+    <div id="employer-applications-section" style="margin-top: 2em;">
+      <h2>Job Applications</h2>
+      <div id="applications-list"></div>
+    </div>
+    <script src="firebase-auth.js"></script>
+    <script type="module" src="firebase-jobs.js"></script>
+    <script>
+      // Wait for jobManager to be available before setting window.firebaseFirestore
+      function setFirestoreGlobal(retries = 10) {
+        if (window.jobManager && window.jobManager.db) {
+          window.firebaseFirestore = window.jobManager.db;
+          console.log('window.firebaseFirestore set!');
+        } else if (retries > 0) {
+          setTimeout(() => setFirestoreGlobal(retries - 1), 100);
+        } else {
+          console.warn('window.jobManager.db not available after retries');
+        }
+      }
+      setFirestoreGlobal();
+    </script>
+    <script src="employer-applications.js"></script>
 </body>
 </html>

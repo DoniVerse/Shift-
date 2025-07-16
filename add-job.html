@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+i<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -129,6 +129,8 @@
                 name: employerInfo.name || currentUser.name || '',
                 email: employerInfo.email || currentUser.email || ''
             };
+            // Get employer Firebase UID
+            const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : (currentUser.firebaseUid || null);
 
             console.log('🔍 Job submission data:');
             console.log('📝 Title:', jobTitle);
@@ -173,7 +175,7 @@ Continue with publishing?
                         categoryTitle: categoryTitle,
                         employerName: employer.name || '',
                         employerEmail: employer.email || '',
-                        employerId: currentUser.firebaseUid || null
+                        employerId: employerUid // Always set employerId to Firebase UID
                     };
 
                     // Try Firebase first, then fallback to local
