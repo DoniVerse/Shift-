@@ -1,4 +1,5 @@
 // employer-applications.js
+import { collection, query, where, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Debug: Log the state of globals
@@ -37,9 +38,16 @@ async function loadEmployerApplications(employerUid) {
   }
 
   try {
-    const querySnapshot = await db.collection('applications')
-      .where('employerId', '==', employerUid)
-      .get();
+    console.log('Querying applications for employerUid:', employerUid);
+    const q = query(
+      collection(db, 'applications'),
+      where('employerId', '==', employerUid)
+    );
+    const querySnapshot = await getDocs(q);
+    console.log('QuerySnapshot size:', querySnapshot.size);
+    querySnapshot.forEach(docSnap => {
+      console.log('Application doc:', docSnap.id, docSnap.data());
+    });
 
     if (querySnapshot.empty) {
       applicationsList.innerHTML = '<p>No applications found for your jobs yet.</p>';
@@ -47,8 +55,8 @@ async function loadEmployerApplications(employerUid) {
     }
 
     let html = '';
-    querySnapshot.forEach(doc => {
-      const app = doc.data();
+    querySnapshot.forEach(docSnap => {
+      const app = docSnap.data();
       html += `
         <div class="application-card" style="border:1px solid #ccc; padding:1em; margin-bottom:1em; border-radius:8px;">
           <h3>${app.jobTitle || 'Job'}</h3>
@@ -56,8 +64,8 @@ async function loadEmployerApplications(employerUid) {
           <p><strong>Year:</strong> ${app.studentYear || ''} | <strong>University:</strong> ${app.studentUniversity || ''} | <strong>Department:</strong> ${app.studentDepartment || ''}</p>
           <p><strong>Status:</strong> ${app.status || 'pending'}</p>
           ${app.status === 'pending' ? `
-            <button onclick="handleApplicationAction('${doc.id}', 'accepted')">Accept</button>
-            <button onclick="handleApplicationAction('${doc.id}', 'rejected')">Reject</button>
+            <button onclick="handleApplicationAction('${docSnap.id}', 'accepted')">Accept</button>
+            <button onclick="handleApplicationAction('${docSnap.id}', 'rejected')">Reject</button>
           ` : ''}
         </div>
       `;
@@ -72,10 +80,11 @@ async function loadEmployerApplications(employerUid) {
 
 // Accept/Reject handler
 window.handleApplicationAction = async function(appId, action) {
-  if (!confirm(`Are you sure you want to ${action} this application?`)) return;
   const db = window.firebaseFirestore;
+  if (!confirm(`Are you sure you want to ${action} this application?`)) return;
   try {
-    await db.collection('applications').doc(appId).update({ status: action });
+    const appDocRef = doc(db, 'applications', appId);
+    await updateDoc(appDocRef, { status: action });
     alert(`Application ${action}!`);
     location.reload();
   } catch (err) {

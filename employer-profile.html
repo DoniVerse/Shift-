@@ -287,22 +287,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <h2>Job Applications</h2>
       <div id="applications-list"></div>
     </div>
-    <script src="firebase-auth.js"></script>
+    <script type="module" src="firebase-auth.js"></script>
     <script type="module" src="firebase-jobs.js"></script>
-    <script>
-      // Wait for jobManager to be available before setting window.firebaseFirestore
-      function setFirestoreGlobal(retries = 10) {
-        if (window.jobManager && window.jobManager.db) {
-          window.firebaseFirestore = window.jobManager.db;
-          console.log('window.firebaseFirestore set!');
-        } else if (retries > 0) {
-          setTimeout(() => setFirestoreGlobal(retries - 1), 100);
-        } else {
-          console.warn('window.jobManager.db not available after retries');
-        }
-      }
-      setFirestoreGlobal();
-    </script>
-    <script src="employer-applications.js"></script>
-</body>
+    <script type="module" src="employer-applications.js"></script>
+  </body>
 </html>

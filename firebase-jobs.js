@@ -1,5 +1,5 @@
 // Firebase Jobs Management System
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import { 
     getFirestore, 
     collection, 
@@ -17,14 +17,22 @@ const firebaseConfig = {
     apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
     authDomain: "shift-3140e.firebaseapp.com",
     projectId: "shift-3140e",
-    storageBucket: "shift-3140e.firebasestorage.app",
+    storageBucket: "shift-3140e.firebaseapp.com",
     messagingSenderId: "716245939154",
     appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
     measurementId: "G-F6WJ0T3E71"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize or get existing Firebase App
+let app;
+try {
+  app = getApp();
+  console.log('Using existing Firebase app');
+} catch (e) {
+  app = initializeApp(firebaseConfig);
+  console.log('Initialized new Firebase app');
+}
+
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -257,6 +265,8 @@ class JobManager {
 
 // Create global instance
 window.jobManager = new JobManager();
+window.firebaseFirestore = window.jobManager.db;
+console.log('window.firebaseFirestore set by firebase-jobs.js!');
 
 // Export for use in other files
 export default JobManager;
