@@ -1,10 +1,11 @@
-i<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shift - Add Job</title>
     <link rel="stylesheet" href="add-job-styles.css">
+    <script type="module" src="firebase-auth.js"></script>
 </head>
 <body>
     <div class="container">
@@ -84,101 +85,63 @@ i<!DOCTYPE html>
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Firebase Auth to be ready
-            function checkAuthAndUserType() {
-                // Check Firebase Auth
-                if (!window.firebaseAuth || !window.firebaseAuth.currentUser) {
-                    alert('You must be logged in as an employer to add a job. Redirecting to login...');
-                    window.location.href = 'employer-signin.html';
-                    return false;
-                }
-                // Check userType in localStorage
-                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (user.userType !== 'employer') {
-                    alert('Access denied. Only employers can access this page.');
-                    window.location.href = 'student-profile.html';
-                    return false;
-                }
-                return true;
-            }
+            // Make user available everywhere in this script
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-            // Wait for Firebase Auth to initialize (in case of async loading)
-            if (window.firebaseAuth && window.firebaseAuth.currentUser) {
-                checkAuthAndUserType();
-            } else {
-                // Poll for auth state (max 2 seconds)
-                let waited = 0;
-                const interval = setInterval(() => {
-                    if (window.firebaseAuth && window.firebaseAuth.currentUser) {
-                        clearInterval(interval);
-                        checkAuthAndUserType();
-                    } else if (waited > 2000) {
-                        clearInterval(interval);
-                        alert('Unable to verify authentication. Please log in again.');
+            // Wait for Firebase Auth to be ready using onAuthStateChange
+            if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
+                window.firebaseAuth.onAuthStateChange(function(firebaseUser) {
+                    if (!firebaseUser) {
+                        alert('You must be logged in as an employer to add a job. Redirecting to login...');
                         window.location.href = 'employer-signin.html';
+                        return;
                     }
-                    waited += 100;
-                }, 100);
-            }
+                    if (user.userType !== 'employer') {
+                        alert('Access denied. Only employers can access this page.');
+                        window.location.href = 'student-profile.html';
+                        return;
+                    }
+                    // Place the rest of your page logic here (e.g., form event listeners, etc.)
+                    document.getElementById('job-form').addEventListener('submit', async function(e) {
+                        e.preventDefault();
 
-            // Debug: Show URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const category = urlParams.get('category') || '';
-            const categoryTitle = urlParams.get('title') || '';
+                        const jobTitle = document.getElementById('job-title').value;
+                        const jobDescription = document.getElementById('job-description').value;
+                        const paymentCode = document.getElementById('payment-code').value;
+                        const expectedHours = document.getElementById('expected-hours').value;
+                        // Get category from URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const category = urlParams.get('category') || '';
+                        const categoryTitle = urlParams.get('title') || '';
+                        // Get employer info from both possible sources
+                        const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
+                        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-            console.log('🔍 Add-job page loaded');
-            console.log('🔍 URL parameters:', { category, categoryTitle });
-            console.log('🔍 Current user:', user);
-            console.log('🔍 Employer info:', JSON.parse(localStorage.getItem('employerInfo') || '{}'));
+                        // Use employerInfo if available, otherwise use currentUser
+                        const employer = {
+                            name: employerInfo.name || currentUser.name || '',
+                            email: employerInfo.email || currentUser.email || ''
+                        };
+                        // Get employer Firebase UID
+                        const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : null;
 
-            // Show debug info to user
-            if (category && categoryTitle) {
-                document.querySelector('.page-title').innerHTML = `Add Job Details<br><small style="color: #666; font-size: 14px;">Category: ${categoryTitle}</small>`;
-            } else {
-                alert('⚠️ Warning: No job category selected. Please go back and select a category first.');
-            }
-        });
+                        if (!employerUid) {
+                            alert('Error: You must be logged in with a valid employer account to post a job. Please log in again.');
+                            window.location.href = 'employer-signin.html';
+                            return;
+                        }
 
-        document.getElementById('job-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
+                        console.log('🔍 Job submission data:');
+                        console.log('📝 Title:', jobTitle);
+                        console.log('📝 Description:', jobDescription);
+                        console.log('📝 Payment:', paymentCode);
+                        console.log('📝 Hours:', expectedHours);
+                        console.log('📝 Category:', category);
+                        console.log('📝 Category Title:', categoryTitle);
+                        console.log('👤 Employer info:', employer);
 
-            const jobTitle = document.getElementById('job-title').value;
-            const jobDescription = document.getElementById('job-description').value;
-            const paymentCode = document.getElementById('payment-code').value;
-            const expectedHours = document.getElementById('expected-hours').value;
-            // Get category from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const category = urlParams.get('category') || '';
-            const categoryTitle = urlParams.get('title') || '';
-            // Get employer info from both possible sources
-            const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-            // Use employerInfo if available, otherwise use currentUser
-            const employer = {
-                name: employerInfo.name || currentUser.name || '',
-                email: employerInfo.email || currentUser.email || ''
-            };
-            // Get employer Firebase UID
-            const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : null;
-
-            if (!employerUid) {
-                alert('Error: You must be logged in with a valid employer account to post a job. Please log in again.');
-                window.location.href = 'employer-signin.html';
-                return;
-            }
-
-            console.log('🔍 Job submission data:');
-            console.log('📝 Title:', jobTitle);
-            console.log('📝 Description:', jobDescription);
-            console.log('📝 Payment:', paymentCode);
-            console.log('📝 Hours:', expectedHours);
-            console.log('📝 Category:', category);
-            console.log('📝 Category Title:', categoryTitle);
-            console.log('👤 Employer info:', employer);
-
-            // Show debug alert to user
-            const debugInfo = `
+                        // Show debug alert to user
+                        const debugInfo = `
 🔍 JOB SUBMISSION DEBUG:
 Title: ${jobTitle}
 Category: ${category}
@@ -189,121 +152,127 @@ Email: ${employer.email || 'MISSING'}
 Continue with publishing?
             `;
 
-            if (!confirm(debugInfo)) {
-                return;
-            }
-
-            if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
-                // Show loading message
-                const submitBtn = document.querySelector('.publish-btn');
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Publishing...';
-                submitBtn.disabled = true;
-
-                try {
-                    // Build job object
-                    const job = {
-                        title: jobTitle,
-                        description: jobDescription,
-                        paymentCode: paymentCode,
-                        expectedHours: expectedHours,
-                        category: category,
-                        categoryTitle: categoryTitle,
-                        employerName: employer.name || '',
-                        employerEmail: employer.email || '',
-                        employerId: employerUid // Always set employerId to Firebase UID
-                    };
-
-                    // Try Firebase first, then fallback to local
-                    let result;
-                    try {
-                        if (window.jobManager) {
-                            console.log('🔥 Attempting Firebase job publishing...');
-                            result = await window.jobManager.publishJob(job);
-                            console.log('🔥 Firebase result:', result);
-                        } else {
-                            throw new Error('Firebase jobManager not available');
+                        if (!confirm(debugInfo)) {
+                            return;
                         }
-                    } catch (firebaseError) {
-                        console.error('🔥 Firebase failed:', firebaseError);
-                        console.error('🔥 Error code:', firebaseError.code);
-                        console.error('🔥 Error message:', firebaseError.message);
 
-                        alert(`⚠️ Firebase Error: ${firebaseError.message}\n\nFalling back to local storage...`);
+                        if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
+                            // Show loading message
+                            const submitBtn = document.querySelector('.publish-btn');
+                            const originalText = submitBtn.textContent;
+                            submitBtn.textContent = 'Publishing...';
+                            submitBtn.disabled = true;
 
-                        console.log('📱 Using local storage fallback...');
-                        result = window.localJobsManager.publishJob(job);
-                        console.log('📱 Local result:', result);
-                    }
+                            try {
+                                // Build job object
+                                const job = {
+                                    title: jobTitle,
+                                    description: jobDescription,
+                                    paymentCode: paymentCode,
+                                    expectedHours: expectedHours,
+                                    category: category,
+                                    categoryTitle: categoryTitle,
+                                    employerName: employer.name || '',
+                                    employerEmail: employer.email || '',
+                                    employerId: employerUid // Always set employerId to Firebase UID
+                                };
 
-                    if (result.success) {
-                        alert(`✅ Job "${jobTitle}" has been published successfully!\n\nJob ID: ${result.jobId}\nStudents can now see and apply to this job.`);
-                        window.location.href = 'job-catagory.html';
-                    } else {
-                        throw new Error(result.error);
-                    }
-                } catch (error) {
-                    console.error('Error publishing job:', error);
+                                // Try Firebase first, then fallback to local
+                                let result;
+                                try {
+                                    if (window.jobManager) {
+                                        console.log('🔥 Attempting Firebase job publishing...');
+                                        result = await window.jobManager.publishJob(job);
+                                        console.log('🔥 Firebase result:', result);
+                                    } else {
+                                        throw new Error('Firebase jobManager not available');
+                                    }
+                                } catch (firebaseError) {
+                                    console.error('🔥 Firebase failed:', firebaseError);
+                                    console.error('🔥 Error code:', firebaseError.code);
+                                    console.error('🔥 Error message:', firebaseError.message);
 
-                    let errorMessage = '';
-                    if (error.message.includes('permission') || error.message.includes('insufficient')) {
-                        errorMessage = `🔒 Firebase Permission Error\n\nThis happens because Firebase security rules need to be configured.\n\nFor now, your job will be saved locally and visible on this device.`;
-                    } else {
-                        errorMessage = `❌ Network Error: ${error.message}\n\nYour job will be saved locally.`;
-                    }
+                                    alert(`⚠️ Firebase Error: ${firebaseError.message}\n\nFalling back to local storage...`);
 
-                    alert(errorMessage);
+                                    console.log('📱 Using local storage fallback...');
+                                    result = window.localJobsManager.publishJob(job);
+                                    console.log('📱 Local result:', result);
+                                }
 
-                    // Fallback to localStorage
-                    const job = {
-                        title: jobTitle,
-                        description: jobDescription,
-                        paymentCode: paymentCode,
-                        expectedHours: expectedHours,
-                        category: category,
-                        categoryTitle: categoryTitle,
-                        employerName: employer.name || '',
-                        employerEmail: employer.email || '',
-                        timestamp: Date.now(),
-                        source: 'localStorage' // Mark as local
-                    };
-                    const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-                    jobs.push(job);
-                    localStorage.setItem('jobs', JSON.stringify(jobs));
-                    alert(`✅ Job "${jobTitle}" has been published locally!\n\nIt will be visible to students on this device.`);
-                    window.location.href = 'job-catagory.html';
-                } finally {
-                    // Reset button
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                }
+                                if (result.success) {
+                                    alert(`✅ Job "${jobTitle}" has been published successfully!\n\nJob ID: ${result.jobId}\nStudents can now see and apply to this job.`);
+                                    window.location.href = 'job-catagory.html';
+                                } else {
+                                    throw new Error(result.error);
+                                }
+                            } catch (error) {
+                                console.error('Error publishing job:', error);
+
+                                let errorMessage = '';
+                                if (error.message.includes('permission') || error.message.includes('insufficient')) {
+                                    errorMessage = `🔒 Firebase Permission Error\n\nThis happens because Firebase security rules need to be configured.\n\nFor now, your job will be saved locally and visible on this device.`;
+                                } else {
+                                    errorMessage = `❌ Network Error: ${error.message}\n\nYour job will be saved locally.`;
+                                }
+
+                                alert(errorMessage);
+
+                                // Fallback to localStorage
+                                const job = {
+                                    title: jobTitle,
+                                    description: jobDescription,
+                                    paymentCode: paymentCode,
+                                    expectedHours: expectedHours,
+                                    category: category,
+                                    categoryTitle: categoryTitle,
+                                    employerName: employer.name || '',
+                                    employerEmail: employer.email || '',
+                                    timestamp: Date.now(),
+                                    source: 'localStorage' // Mark as local
+                                };
+                                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                                jobs.push(job);
+                                localStorage.setItem('jobs', JSON.stringify(jobs));
+                                alert(`✅ Job "${jobTitle}" has been published locally!\n\nIt will be visible to students on this device.`);
+                                window.location.href = 'job-catagory.html';
+                            } finally {
+                                // Reset button
+                                submitBtn.textContent = originalText;
+                                submitBtn.disabled = false;
+                            }
+                        } else {
+                            alert('Please fill in all required fields');
+                        }
+                    });
+
+                    // Auto-resize textareas
+                    const textareas = document.querySelectorAll('textarea');
+                    textareas.forEach(textarea => {
+                        textarea.addEventListener('input', function() {
+                            this.style.height = 'auto';
+                            this.style.height = this.scrollHeight + 'px';
+                        });
+                    });
+
+                    // Form validation
+                    const inputs = document.querySelectorAll('input, textarea, select');
+                    inputs.forEach(input => {
+                        input.addEventListener('blur', function() {
+                            if (this.hasAttribute('required') && !this.value.trim()) {
+                                this.style.borderColor = '#dc2626';
+                            } else {
+                                this.style.borderColor = 'var(--color-primary)';
+                            }
+                        });
+                    });
+                });
             } else {
-                alert('Please fill in all required fields');
+                // Fallback if onAuthStateChange is not available (should ideally not happen with current setup)
+                alert('Firebase Auth is not initialized or onAuthStateChange is not available. Please ensure Firebase is loaded correctly.');
+                window.location.href = 'employer-signin.html'; // Redirect to login if auth is not ready
             }
-        });
-
-        // Auto-resize textareas
-        const textareas = document.querySelectorAll('textarea');
-        textareas.forEach(textarea => {
-            textarea.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = this.scrollHeight + 'px';
-            });
-        });
-
-        // Form validation
-        const inputs = document.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            input.addEventListener('blur', function() {
-                if (this.hasAttribute('required') && !this.value.trim()) {
-                    this.style.borderColor = '#dc2626';
-                } else {
-                    this.style.borderColor = 'var(--color-primary)';
-                }
-            });
         });
     </script>
-
     <!-- Local Jobs Management (Primary) -->
     <script src="local-jobs-manager.js"></script>
     <!-- Firebase Jobs Management (Fallback) -->

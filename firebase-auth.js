@@ -53,6 +53,11 @@ class FirebaseAuthManager {
             this.currentUser = user;
             if (user) {
                 await this.syncUserData(user);
+            } else {
+                // User signed out, clear localStorage
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userAuthenticated');
+                localStorage.removeItem('employerInfo');
             }
             this.notifyAuthCallbacks(user);
         });
