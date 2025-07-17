@@ -212,6 +212,7 @@ class JobManager {
                 studentYear: applicationData.studentYear,
                 studentUniversity: applicationData.studentUniversity,
                 studentDepartment: applicationData.studentDepartment,
+                studentId: applicationData.studentId, // Always include studentId (Firebase UID)
                 status: 'applied',
                 createdAt: serverTimestamp()
             };

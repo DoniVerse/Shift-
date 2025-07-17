@@ -70,33 +70,63 @@
         </div>
     </div>
 
+    <!-- Notification Modal -->
+    <div id="notificationModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#fff;padding:2em;border-radius:8px;max-width:600px;width:90vw;max-height:80vh;overflow:auto;position:relative;">
+        <button onclick="document.getElementById('notificationModal').style.display='none'" style="position:absolute;top:10px;right:10px;font-size:1.5em;background:none;border:none;cursor:pointer;">✕</button>
+        <h2>Notifications</h2>
+        <div id="studentNotificationsList">Loading...</div>
+      </div>
+    </div>
+    <!-- Add a button to open notifications -->
+    <button onclick="document.getElementById('notificationModal').style.display='flex'; loadStudentNotifications();" style="position:fixed;bottom:80px;right:20px;z-index:10000;background:#2563eb;color:#fff;border:none;padding:12px 20px;border-radius:50px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-size:1.1em;cursor:pointer;">🔔 Notifications</button>
+
     <script src="student-profile.js"></script>
-    <script>
-    // Show uploaded profile picture if available
-    document.addEventListener('DOMContentLoaded', function() {
-        const profilePicture = document.getElementById('profilePicture');
-        const savedProfilePic = localStorage.getItem('profilePicture');
-        if (savedProfilePic) {
-            const img = document.createElement('img');
-            img.src = savedProfilePic;
-            img.style.maxWidth = '80px';
-            img.style.maxHeight = '80px';
-            img.style.borderRadius = '50%';
-            profilePicture.innerHTML = '';
-            profilePicture.appendChild(img);
-        }
-        // Logout logic
-        const logoutBtn = document.getElementById('student-logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function() {
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('profilePicture');
-                window.location.href = 'studentlogin.html';
-            });
-        }
-    });
-    </script>
     <!-- Chat Widget Integration -->
     <script src="chat-integration-widget.js"></script>
-</body>
+    <script type="module" src="firebase-auth.js"></script>
+    <script type="module" src="firebase-jobs.js"></script>
+    <script type="module">
+    import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    window.loadStudentNotifications = function() {
+      const db = window.firebaseFirestore;
+      const list = document.getElementById('studentNotificationsList');
+      list.innerHTML = 'Loading...';
+
+      if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
+        window.firebaseAuth.onAuthStateChange(async (user) => {
+          if (!user) {
+            list.innerHTML = 'Please log in as a student.';
+            return;
+          }
+          try {
+            const notifRef = collection(db, 'users', user.uid, 'notifications');
+            const snapshot = await getDocs(notifRef);
+            if (snapshot.empty) {
+              list.innerHTML = 'No notifications yet.';
+              return;
+            }
+            let html = '';
+            snapshot.forEach(doc => {
+              const notif = doc.data();
+              html += `
+                <div style="border:1px solid #d1d5db; background:#f9fafb; padding:1em; margin-bottom:1em; border-radius:8px;">
+                  <div><strong>Status:</strong> <span style="color:${notif.status === 'accepted' ? '#22c55e' : notif.status === 'rejected' ? '#dc2626' : '#64748b'}">${notif.status}</span></div>
+                  <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
+                  <div><strong>Message:</strong> ${notif.message || ''}</div>
+                  <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
+                </div>
+              `;
+            });
+            list.innerHTML = html;
+          } catch (err) {
+            list.innerHTML = 'Error loading notifications: ' + err.message;
+          }
+        });
+      } else {
+        list.innerHTML = 'Authentication system not available.';
+      }
+    };
+    </script>
+  </body>
 </html>

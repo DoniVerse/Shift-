@@ -287,6 +287,23 @@ document.addEventListener('DOMContentLoaded', function() {
       <h2>Job Applications</h2>
       <div id="applications-list"></div>
     </div>
+    <script type="module">
+      import { renderEmployerApplications } from './employer-applications-view.js';
+      // Wait for Firebase Auth to be ready
+      function renderProfileApplications() {
+        const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+        if (user) {
+          renderEmployerApplications(document.getElementById('applications-list'), user.uid);
+        } else {
+          document.getElementById('applications-list').innerHTML = '<p>Please log in as an employer to view applications.</p>';
+        }
+      }
+      if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
+        window.firebaseAuth.onAuthStateChange(() => renderProfileApplications());
+      } else {
+        renderProfileApplications();
+      }
+    </script>
     <script type="module" src="firebase-auth.js"></script>
     <script type="module" src="firebase-jobs.js"></script>
     <script type="module" src="employer-applications.js"></script>

@@ -84,11 +84,41 @@ i<!DOCTYPE html>
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            if (user.userType !== 'employer') {
-                alert('Access denied. Only employers can access this page.');
-                window.location.href = 'student-profile.html';
-                return;
+            // Wait for Firebase Auth to be ready
+            function checkAuthAndUserType() {
+                // Check Firebase Auth
+                if (!window.firebaseAuth || !window.firebaseAuth.currentUser) {
+                    alert('You must be logged in as an employer to add a job. Redirecting to login...');
+                    window.location.href = 'employer-signin.html';
+                    return false;
+                }
+                // Check userType in localStorage
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (user.userType !== 'employer') {
+                    alert('Access denied. Only employers can access this page.');
+                    window.location.href = 'student-profile.html';
+                    return false;
+                }
+                return true;
+            }
+
+            // Wait for Firebase Auth to initialize (in case of async loading)
+            if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+                checkAuthAndUserType();
+            } else {
+                // Poll for auth state (max 2 seconds)
+                let waited = 0;
+                const interval = setInterval(() => {
+                    if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+                        clearInterval(interval);
+                        checkAuthAndUserType();
+                    } else if (waited > 2000) {
+                        clearInterval(interval);
+                        alert('Unable to verify authentication. Please log in again.');
+                        window.location.href = 'employer-signin.html';
+                    }
+                    waited += 100;
+                }, 100);
             }
 
             // Debug: Show URL parameters
@@ -130,7 +160,13 @@ i<!DOCTYPE html>
                 email: employerInfo.email || currentUser.email || ''
             };
             // Get employer Firebase UID
-            const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : (currentUser.firebaseUid || null);
+            const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : null;
+
+            if (!employerUid) {
+                alert('Error: You must be logged in with a valid employer account to post a job. Please log in again.');
+                window.location.href = 'employer-signin.html';
+                return;
+            }
 
             console.log('🔍 Job submission data:');
             console.log('📝 Title:', jobTitle);

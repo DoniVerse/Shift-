@@ -129,51 +129,59 @@
                 <span>Profile</span>
             </a>
             <!-- Applications nav item -->
-            <a href="#" class="nav-item" id="applicationsNav">
+            <!-- <a href="#" class="nav-item" id="applicationsNav">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span>Applications</span>
-            </a>
+            </a> -->
         </div>
         <div id="applicationsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;"></div>
     </div>
 
     <script type="module">
-  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
-    authDomain: "shift-3140e.firebaseapp.com",
-    projectId: "shift-3140e",
-    storageBucket: "shift-3140e.firebasestorage.app",
-    messagingSenderId: "716245939154",
-    appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
-    measurementId: "G-F6WJ0T3E71"
-  };
-
-  if (!window.firebaseApp) {
-    window.firebaseApp = initializeApp(firebaseConfig);
-  }
-  const auth = getAuth();
-
-  onAuthStateChanged(auth, (user) => {
-    console.log('🔍 Firebase Auth State:', user ? 'Signed in' : 'Not signed in');
-
-    // Check if user is signed in through localStorage instead
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
-
-    if (!user && !currentUser.email && !employerInfo.email) {
-      console.log('❌ No authentication found, redirecting to signin');
-      window.location.href = 'employer-signin.html';
-    } else {
-      console.log('✅ User authenticated via:', user ? 'Firebase' : 'localStorage');
-    }
-  });
-</script>
-
+      import { renderEmployerApplications } from './employer-applications-view.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        const applicationsNav = document.getElementById('applicationsNav');
+        if (applicationsNav) {
+          applicationsNav.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const modal = document.getElementById('applicationsModal');
+            modal.style.display = 'flex';
+            modal.innerHTML = '<div style="background:#fff;padding:2em;border-radius:8px;max-width:600px;width:90vw;max-height:80vh;overflow:auto;"><h2>Job Applications</h2><div id="modalApplicationsList">Loading...</div><button onclick="document.getElementById(\'applicationsModal\').style.display=\'none\'" style="margin-top:1em;">Close</button></div>';
+            const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+            if (user) {
+              await renderEmployerApplications(document.getElementById('modalApplicationsList'), user.uid);
+            } else {
+              document.getElementById('modalApplicationsList').innerHTML = 'Please log in as an employer.';
+            }
+          });
+        }
+      });
+    </script>
+    <script type="module" src="firebase-auth.js"></script>
+    <script type="module" src="firebase-jobs.js"></script>
+    <script>
+      // Accept/Reject handler for modal
+      window.handleApplicationAction = async function(appId, action) {
+        const db = window.firebaseFirestore;
+        if (!confirm(`Are you sure you want to ${action} this application?`)) return;
+        try {
+          const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+          const appDocRef = doc(db, 'applications', appId);
+          await updateDoc(appDocRef, { status: action });
+          alert(`Application ${action}!`);
+          // Optionally, re-render the modal applications list
+          const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+          if (user) {
+            const { renderEmployerApplications } = await import('./employer-applications-view.js');
+            await renderEmployerApplications(document.getElementById('modalApplicationsList'), user.uid);
+          }
+        } catch (err) {
+          alert('Error updating application: ' + err.message);
+        }
+      };
+    </script>
     <script>
         function selectJobCategory(category) {
             // Store the selected category

@@ -309,6 +309,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize profile
     loadProfile();
+
+    // Student logout button handler
+    const logoutBtn = document.getElementById('student-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {
+                window.firebaseAuth.signOutUser();
+            } else {
+                // Fallback: clear localStorage and redirect
+                localStorage.clear();
+                window.location.href = 'landing.html';
+            }
+        });
+    }
 });
 
 // Global functions for settings
