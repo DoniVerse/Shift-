@@ -529,46 +529,4 @@ document.addEventListener('DOMContentLoaded', function() {
         // Refresh to show the demo data
         location.reload();
     }
-
-    // Add year selector for testing
-    addYearSelector();
-
-    function addYearSelector() {
-        const container = document.querySelector('.container');
-        if (container) {
-            const yearSelector = document.createElement('div');
-            yearSelector.style.cssText = `
-                background: #f8f9fa;
-                padding: 15px;
-                margin: 20px 0;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
-                text-align: center;
-            `;
-            yearSelector.innerHTML = `
-                <label style="margin-right: 10px; font-weight: 600;">🧪 Test as Different Year:</label>
-                <select id="yearSelect" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc;">
-                    <option value="2">Year 2 (Document Summary)</option>
-                    <option value="3" selected>Year 3 (Legal Research)</option>
-                    <option value="4">Year 4 (Legal Filings)</option>
-                    <option value="5">Year 5 (Corporate Advisory)</option>
-                </select>
-                <button onclick="changeStudentYear()" style="margin-left: 10px; padding: 8px 16px; background: #d17e7e; color: white; border: none; border-radius: 5px; cursor: pointer;">Apply</button>
-            `;
-            container.insertBefore(yearSelector, container.firstChild);
-        }
-    }
-
-    window.changeStudentYear = function() {
-        const yearSelect = document.getElementById('yearSelect');
-        const newYear = parseInt(yearSelect.value);
-
-        // Update current user data
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        currentUser.yearOfStudy = newYear;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-        // Refresh jobs
-        displayJobs();
-    };
 });

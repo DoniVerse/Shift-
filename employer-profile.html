@@ -96,21 +96,6 @@
         </div>
     </div>
 
-    <button id="testNotificationBtn" style="position:fixed;bottom:20px;left:20px;z-index:10000;background:#22c55e;color:#fff;border:none;padding:12px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-size:1.1em;cursor:pointer;">Test Notification</button>
-    <script>
-    document.getElementById('testNotificationBtn').onclick = function() {
-        const appId = prompt('Enter application ID to test notification:');
-        const studentId = prompt('Enter student UID (leave blank to test email lookup):');
-        if (appId) {
-            if (window.handleApplicationAction) {
-                window.handleApplicationAction(appId, 'accepted', studentId || '');
-            } else {
-                alert('window.handleApplicationAction is not defined!');
-            }
-        }
-    };
-    </script>
-
     <script>
         function goBack() {
             window.history.back();
