@@ -97,13 +97,17 @@
         window.firebaseAuth.onAuthStateChange(async (user) => {
           if (!user) {
             list.innerHTML = 'Please log in as a student.';
+            console.log('[Student Notif] No user logged in');
             return;
           }
           try {
+            console.log('[Student Notif] Current user UID:', user.uid);
             const notifRef = collection(db, 'users', user.uid, 'notifications');
             const snapshot = await getDocs(notifRef);
+            console.log('[Student Notif] Notification docs:', snapshot.docs.map(d => d.data()));
             if (snapshot.empty) {
               list.innerHTML = 'No notifications yet.';
+              console.log('[Student Notif] No notifications found for user:', user.uid);
               return;
             }
             let html = '';
@@ -119,12 +123,15 @@
               `;
             });
             list.innerHTML = html;
+            console.log('[Student Notif] Rendered notifications for user:', user.uid);
           } catch (err) {
             list.innerHTML = 'Error loading notifications: ' + err.message;
+            console.error('[Student Notif] Error loading notifications:', err);
           }
         });
       } else {
         list.innerHTML = 'Authentication system not available.';
+        console.log('[Student Notif] window.firebaseAuth or onAuthStateChange not available');
       }
     };
     </script>

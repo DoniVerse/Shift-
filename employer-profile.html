@@ -96,6 +96,21 @@
         </div>
     </div>
 
+    <button id="testNotificationBtn" style="position:fixed;bottom:20px;left:20px;z-index:10000;background:#22c55e;color:#fff;border:none;padding:12px 20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);font-size:1.1em;cursor:pointer;">Test Notification</button>
+    <script>
+    document.getElementById('testNotificationBtn').onclick = function() {
+        const appId = prompt('Enter application ID to test notification:');
+        const studentId = prompt('Enter student UID (leave blank to test email lookup):');
+        if (appId) {
+            if (window.handleApplicationAction) {
+                window.handleApplicationAction(appId, 'accepted', studentId || '');
+            } else {
+                alert('window.handleApplicationAction is not defined!');
+            }
+        }
+    };
+    </script>
+
     <script>
         function goBack() {
             window.history.back();
@@ -162,28 +177,51 @@
 
         function showJobInfo() {
             // Show jobs posted by this employer
-            const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
             const employer = employerInfo || {};
-            const myJobs = jobs.filter(job => job.employerEmail === employer.email);
-            if (!myJobs.length) {
-                showModal('Job Postings', '<div>No job postings yet. Add jobs from the Add-Job section.</div>');
-                return;
+            const modal = document.getElementById('modal-overlay');
+            const modalBody = document.getElementById('modal-body');
+            const modalTitle = document.getElementById('modal-title');
+            modalTitle.textContent = 'Job Postings';
+            modalBody.innerHTML = '<div>Loading job postings...</div>';
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            async function renderJobs(jobs) {
+                if (!jobs.length) {
+                    modalBody.innerHTML = '<div>No job postings yet. Add jobs from the Add-Job section.</div>';
+                    return;
+                }
+                let content = '<div class="info-section">';
+                jobs.forEach(job => {
+                    content += `
+                        <div class="job-card">
+                            <div><strong>Title:</strong> ${job.title}</div>
+                            <div><strong>Category:</strong> ${job.categoryTitle || job.category}</div>
+                            <div><strong>Payment:</strong> ${job.paymentCode}</div>
+                            <div><strong>Expected Hours:</strong> ${job.expectedHours || ''}</div>
+                            <div><strong>Description:</strong> ${job.description}</div>
+                        </div>
+                        <hr />
+                    `;
+                });
+                content += '</div>';
+                modalBody.innerHTML = content;
             }
-            let content = '<div class="info-section">';
-            myJobs.forEach(job => {
-                content += `
-                    <div class="job-card">
-                        <div><strong>Title:</strong> ${job.title}</div>
-                        <div><strong>Category:</strong> ${job.categoryTitle || job.category}</div>
-                        <div><strong>Payment:</strong> ${job.paymentCode}</div>
-                        <div><strong>Expected Hours:</strong> ${job.expectedHours || ''}</div>
-                        <div><strong>Description:</strong> ${job.description}</div>
-                    </div>
-                    <hr />
-                `;
-            });
-            content += '</div>';
-            showModal('Job Postings', content);
+
+            // Try to fetch from Firebase if jobManager is available
+            if (window.jobManager && window.jobManager.getJobsByEmployer) {
+                window.jobManager.getJobsByEmployer(employer.email).then(renderJobs).catch(() => {
+                    // Fallback to localStorage
+                    const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                    const myJobs = jobs.filter(job => job.employerEmail === employer.email);
+                    renderJobs(myJobs);
+                });
+            } else {
+                // Fallback to localStorage
+                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                const myJobs = jobs.filter(job => job.employerEmail === employer.email);
+                renderJobs(myJobs);
+            }
         }
 
         async function viewApplications() {
@@ -222,10 +260,10 @@
                             <button onclick="contactStudent('${app.studentEmail}', '${app.studentName}')" style="background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                                 Contact Student
                             </button>
-                            <button onclick="updateApplicationStatusFirestore('${app.id}', 'accepted')" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                            <button onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}')" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                                 Accept
                             </button>
-                            <button onclick="updateApplicationStatusFirestore('${app.id}', 'rejected')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                            <button onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                                 Reject
                             </button>
                         </div>

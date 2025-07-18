@@ -58,20 +58,21 @@ async function loadEmployerApplications(employerUid) {
     querySnapshot.forEach(docSnap => {
       const app = docSnap.data();
       html += `
-        <div class="application-card" style="border:1px solid #ccc; padding:1em; margin-bottom:1em; border-radius:8px;">
-          <h3>${app.jobTitle || 'Job'}</h3>
-          <p><strong>Student:</strong> ${app.studentName || 'N/A'} (${app.studentEmail || ''})</p>
-          <p><strong>Year:</strong> ${app.studentYear || ''} | <strong>University:</strong> ${app.studentUniversity || ''} | <strong>Department:</strong> ${app.studentDepartment || ''}</p>
-          <p><strong>Status:</strong> ${app.status || 'pending'}</p>
-          ${app.status === 'pending' ? `
-            <button onclick="handleApplicationAction('${docSnap.id}', 'accepted')">Accept</button>
-            <button onclick="handleApplicationAction('${docSnap.id}', 'rejected')">Reject</button>
-          ` : ''}
-        </div>
-      `;
-    });
-
-    applicationsList.innerHTML = html;
+            querySnapshot.forEach(docSnap => {
+              const app = docSnap.data();
+              html += `
+                <div class="application-card" style="border:1px solid #ccc; padding:1em; margin-bottom:1em; border-radius:8px;">
+                  <h3>${app.jobTitle || 'Job'}</h3>
+                  <p><strong>Student:</strong> ${app.studentName || 'N/A'} (${app.studentEmail || ''})</p>
+                  <p><strong>Year:</strong> ${app.studentYear || ''} | <strong>University:</strong> ${app.studentUniversity || ''} | <strong>Department:</strong> ${app.studentDepartment || ''}</p>
+                  <p><strong>Status:</strong> ${app.status || 'pending'}</p>
+                  ${app.status === 'pending' ? `
+                    <button onclick="handleApplicationAction('${docSnap.id}', 'accepted', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Accept</button>
+                    <button onclick="handleApplicationAction('${docSnap.id}', 'rejected', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Reject</button>
+                    <button onclick="window.location.href='mailto:${app.studentEmail}'">Contact Student</button>
+                  ` : ''}
+                </div>
+              `;
   } catch (err) {
     applicationsList.innerHTML = `<p>Error loading applications: ${err.message}</p>`;
     console.error('DEBUG: Error loading applications:', err);
@@ -82,6 +83,25 @@ async function loadEmployerApplications(employerUid) {
 window.handleApplicationAction = async function(appId, action) {
   const db = window.firebaseFirestore;
   if (!confirm(`Are you sure you want to ${action} this application?`)) return;
+window.handleApplicationAction = async function(appId, action, studentId, jobTitle, employerName, studentEmail) {
+  const db = window.firebaseFirestore;
+  const appRef = doc(db, 'applications', appId);
+  await updateDoc(appRef, { status: action });
+  if (action === 'accepted') {
+    // Create notification for student
+    const notificationsRef = collection(db, 'notifications');
+    await window.firebaseAddDoc(notificationsRef, {
+      studentId,
+      jobTitle,
+      employerName,
+      studentEmail,
+      status: 'accepted',
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 min from now
+    });
+  }
+  loadEmployerApplications(window.firebaseAuth.currentUser.uid);
+};
   try {
     const appDocRef = doc(db, 'applications', appId);
     await updateDoc(appDocRef, { status: action });

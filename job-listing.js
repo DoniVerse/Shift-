@@ -309,11 +309,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter functionality
     function setupFilter() {
         const filterBtn = document.getElementById('filterBtn');
-        
-        filterBtn.addEventListener('click', () => {
-            // Simple filter toggle - you can expand this
-            alert('Filter options:\n- By Rating\n- By Category\n- By Date Posted\n\nThis would open a filter modal.');
-        });
+        if (filterBtn) {
+            filterBtn.addEventListener('click', () => {
+                // Simple filter toggle - you can expand this
+                alert('Filter options:\n- By Rating\n- By Category\n- By Date Posted\n\nThis would open a filter modal.');
+            });
+        }
     }
 
     // Bottom navigation

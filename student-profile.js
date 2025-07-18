@@ -171,29 +171,60 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         
         applications: function() {
-            const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
-            if (applications.length === 0) {
-                return `
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <p style="color: var(--color-text-light); font-size: 18px;">No job applications yet</p>
-                        <p style="color: var(--color-text-light); margin-top: 8px;">Start applying for jobs to see your application history here!</p>
-                    </div>
-                `;
+            // Firestore notifications version
+            const db = window.firebaseDb;
+            const auth = window.firebaseAuth;
+            const user = auth.currentUser;
+            const container = document.createElement('div');
+            container.className = 'applications-list';
+            if (!user) {
+                container.innerHTML = `<div style="text-align: center; padding: 40px 20px;"><p style="color: var(--color-text-light); font-size: 18px;">Please sign in to view your applications.</p></div>`;
+                return container.outerHTML;
             }
-            
-            let html = '<div class="applications-list">';
-            applications.forEach(app => {
-                html += `
-                    <div class="application-item" style="padding: 16px; border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 16px;">
-                        <h4 style="color: var(--color-secondary); margin-bottom: 8px;">${app.jobTitle}</h4>
-                        <p style="color: var(--color-text-light); margin-bottom: 4px;">Company: ${app.company}</p>
-                        <p style="color: var(--color-text-light); margin-bottom: 4px;">Applied: ${app.dateApplied}</p>
-                        <p style="color: var(--color-text-light);">Status: <span style="color: var(--color-primary); font-weight: 600;">${app.status}</span></p>
-                    </div>
-                `;
+            // Query Firestore for notifications for this student
+            window.firebaseGetDocs(
+                window.firebaseQuery(
+                    window.firebaseCollection(db, 'notifications'),
+                    window.firebaseWhere('studentId', '==', user.uid)
+                )
+            ).then(querySnapshot => {
+                if (querySnapshot.empty) {
+                    container.innerHTML = `<div style=\"text-align: center; padding: 40px 20px;\"><p style=\"color: var(--color-text-light); font-size: 18px;\">No notifications yet</p><p style=\"color: var(--color-text-light); margin-top: 8px;\">Start applying for jobs to see your application history here!</p></div>`;
+                } else {
+                    querySnapshot.forEach(docSnap => {
+                        const notif = docSnap.data();
+                        let timerHtml = '';
+                        let statusHtml = '';
+                        if (notif.status === 'accepted') {
+                            statusHtml = `<span style=\"color: #22c55e; font-weight: 600;\">Accepted</span>`;
+                            if (notif.expiresAt) {
+                                const expires = new Date(notif.expiresAt);
+                                const now = new Date();
+                                const msLeft = expires - now;
+                                if (msLeft > 0) {
+                                    const min = Math.floor(msLeft / 60000);
+                                    const sec = Math.floor((msLeft % 60000) / 1000);
+                                    timerHtml = `<div style='color:#f59e42;margin-bottom:8px;'>You have ${min}m ${sec}s to start the job and submit your work.</div>`;
+                                } else {
+                                    timerHtml = `<div style='color:#dc2626;margin-bottom:8px;'>Your acceptance window has expired.</div>`;
+                                }
+                            }
+                        } else if (notif.status === 'rejected') {
+                            statusHtml = `<span style=\"color: #dc2626; font-weight: 600;\">Rejected</span>`;
+                        }
+                        container.innerHTML += `
+                            <div class=\"application-item\" style=\"padding: 16px; border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 16px;\">
+                                <h4 style=\"color: var(--color-secondary); margin-bottom: 8px;\">${notif.jobTitle}</h4>
+                                <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Company: ${notif.employerName}</p>
+                                <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Status: ${statusHtml}</p>
+                                ${timerHtml}
+                                ${notif.status === 'rejected' ? `<div style='color:#dc2626;margin-bottom:8px;'>You were rejected by ${notif.employerName}.</div>` : ''}
+                            </div>
+                        `;
+                    });
+                }
             });
-            html += '</div>';
-            return html;
+            return container.outerHTML;
         }
     };
 

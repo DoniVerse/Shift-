@@ -1,7 +1,7 @@
 // Firebase Authentication Integration
 // Integrates Firebase Auth with existing signup/login forms
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import { 
     getAuth, 
     createUserWithEmailAndPassword, 
@@ -34,8 +34,12 @@ const firebaseConfig = {
     measurementId: "G-F6WJ0T3E71"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 const auth = getAuth(app);
 const db = getFirestore(app);
 
