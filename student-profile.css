@@ -30,9 +30,15 @@ body {
 
 .container {
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 500px;
+    margin: 40px auto;
     padding: 0 20px;
+    background: var(--color-white);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    min-height: calc(100vh - 40px);
+    overflow: hidden;
+    position: relative;
 }
 
 .profile-card {
@@ -71,6 +77,8 @@ body {
 
 .main-content {
     padding: 0 30px 40px;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .profile-section {
