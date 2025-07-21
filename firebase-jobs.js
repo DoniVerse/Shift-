@@ -168,13 +168,17 @@ class JobManager {
     }
 
     // Get jobs by employer
-    async getJobsByEmployer(employerEmail) {
+    async getJobsByEmployer(employerId) {
         try {
-            console.log('🔍 Fetching jobs for employer:', employerEmail);
-            
+            if (!employerId) {
+                console.error('🚫 No employerId provided');
+                return [];
+            }
+            console.log('🔍 Fetching jobs for employer:', employerId);
+
             const q = query(
                 collection(this.db, this.jobsCollection),
-                where('employerEmail', '==', employerEmail),
+                where('employerId', '==', employerId),
                 orderBy('createdAt', 'desc')
             );
 
@@ -188,7 +192,7 @@ class JobManager {
                 });
             });
 
-            console.log(`✅ Found ${jobs.length} jobs for employer ${employerEmail}`);
+            console.log(`✅ Found ${jobs.length} jobs for employer ${employerId}`);
             return jobs;
         } catch (error) {
             console.error('❌ Error fetching employer jobs:', error);

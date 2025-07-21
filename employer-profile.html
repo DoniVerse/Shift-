@@ -80,6 +80,8 @@
                 <!-- Settings removed -->
             </div>
         </div>
+        <!-- Applications list for rendering employer applications -->
+        <div id="applications-list"></div>
     </div>
 
     <!-- Modal for different sections -->
@@ -161,8 +163,12 @@
         }
 
         function showJobInfo() {
-            // Show jobs posted by this employer
-            const employer = employerInfo || {};
+            const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+            if (!user) {
+                showModal('Job Postings', '<div>Please sign in to view your job postings.</div>');
+                return;
+            }
+
             const modal = document.getElementById('modal-overlay');
             const modalBody = document.getElementById('modal-body');
             const modalTitle = document.getElementById('modal-title');
@@ -193,20 +199,13 @@
                 modalBody.innerHTML = content;
             }
 
-            // Try to fetch from Firebase if jobManager is available
-            if (window.jobManager && window.jobManager.getJobsByEmployer) {
-                window.jobManager.getJobsByEmployer(employer.email).then(renderJobs).catch(() => {
-                    // Fallback to localStorage
-                    const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-                    const myJobs = jobs.filter(job => job.employerEmail === employer.email);
-                    renderJobs(myJobs);
+            // Always use user.uid here!
+            window.jobManager.getJobsByEmployer(user.uid)
+                .then(renderJobs)
+                .catch(error => {
+                    console.error('Error fetching jobs:', error);
+                    modalBody.innerHTML = '<div>Error loading job postings. Please try again later.</div>';
                 });
-            } else {
-                // Fallback to localStorage
-                const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-                const myJobs = jobs.filter(job => job.employerEmail === employer.email);
-                renderJobs(myJobs);
-            }
         }
 
         async function viewApplications() {
@@ -309,21 +308,28 @@ document.addEventListener('DOMContentLoaded', function() {
       import { renderEmployerApplications } from './employer-applications-view.js';
       // Wait for Firebase Auth to be ready
       function renderProfileApplications() {
+        const el = document.getElementById('applications-list');
         const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+        if (!el) {
+          console.error('applications-list element not found!');
+          return;
+        }
         if (user) {
-          renderEmployerApplications(document.getElementById('applications-list'), user.uid);
+          renderEmployerApplications(el, user.uid);
         } else {
-          document.getElementById('applications-list').innerHTML = '<p>Please log in as an employer to view applications.</p>';
+          el.innerHTML = '<p>Please log in as an employer to view applications.</p>';
         }
       }
       if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
-        window.firebaseAuth.onAuthStateChange(() => renderProfileApplications());
+        window.firebaseAuth.onAuthStateChange(() => {
+          document.addEventListener('DOMContentLoaded', renderProfileApplications);
+        });
       } else {
-        renderProfileApplications();
+        document.addEventListener('DOMContentLoaded', renderProfileApplications);
       }
     </script>
     <script type="module" src="firebase-auth.js"></script>
     <script type="module" src="firebase-jobs.js"></script>
-    <script type="module" src="employer-applications.js"></script>
+    <!-- <script type="module" src="employer-applications.js"></script> -->
   </body>
 </html>

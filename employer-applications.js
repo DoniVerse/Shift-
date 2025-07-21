@@ -36,6 +36,11 @@ async function loadEmployerApplications(employerUid) {
     console.warn('DEBUG: Firestore not available when loading applications');
     return;
   }
+  if (!employerUid) {
+    applicationsList.innerHTML = '<p>Error: Employer ID is missing. Please log in again.</p>';
+    console.error('DEBUG: employerUid is undefined or null');
+    return;
+  }
 
   try {
     console.log('Querying applications for employerUid:', employerUid);
@@ -58,21 +63,20 @@ async function loadEmployerApplications(employerUid) {
     querySnapshot.forEach(docSnap => {
       const app = docSnap.data();
       html += `
-            querySnapshot.forEach(docSnap => {
-              const app = docSnap.data();
-              html += `
-                <div class="application-card" style="border:1px solid #ccc; padding:1em; margin-bottom:1em; border-radius:8px;">
-                  <h3>${app.jobTitle || 'Job'}</h3>
-                  <p><strong>Student:</strong> ${app.studentName || 'N/A'} (${app.studentEmail || ''})</p>
-                  <p><strong>Year:</strong> ${app.studentYear || ''} | <strong>University:</strong> ${app.studentUniversity || ''} | <strong>Department:</strong> ${app.studentDepartment || ''}</p>
-                  <p><strong>Status:</strong> ${app.status || 'pending'}</p>
-                  ${app.status === 'pending' ? `
-                    <button onclick="handleApplicationAction('${docSnap.id}', 'accepted', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Accept</button>
-                    <button onclick="handleApplicationAction('${docSnap.id}', 'rejected', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Reject</button>
-                    <button onclick="window.location.href='mailto:${app.studentEmail}'">Contact Student</button>
-                  ` : ''}
-                </div>
-              `;
+        <div class="application-card" style="border:1px solid #ccc; padding:1em; margin-bottom:1em; border-radius:8px;">
+          <h3>${app.jobTitle || 'Job'}</h3>
+          <p><strong>Student:</strong> ${app.studentName || 'N/A'} (${app.studentEmail || ''})</p>
+          <p><strong>Year:</strong> ${app.studentYear || ''} | <strong>University:</strong> ${app.studentUniversity || ''} | <strong>Department:</strong> ${app.studentDepartment || ''}</p>
+          <p><strong>Status:</strong> ${app.status || 'pending'}</p>
+          ${app.status === 'pending' ? `
+            <button onclick="handleApplicationAction('${docSnap.id}', 'accepted', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Accept</button>
+            <button onclick="handleApplicationAction('${docSnap.id}', 'rejected', '${app.studentId}', '${app.jobTitle}', '${app.employerName}', '${app.studentEmail}')">Reject</button>
+            <button onclick=\"window.location.href='mailto:${app.studentEmail}'\">Contact Student</button>
+          ` : ''}
+        </div>
+      `;
+    });
+    applicationsList.innerHTML = html;
   } catch (err) {
     applicationsList.innerHTML = `<p>Error loading applications: ${err.message}</p>`;
     console.error('DEBUG: Error loading applications:', err);
