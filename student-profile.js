@@ -1,3 +1,5 @@
+import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('sectionModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -171,60 +173,12 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         
         applications: function() {
-            // Firestore notifications version
-            const db = window.firebaseDb;
+            // Show all jobs the student has applied to (application history)
+            const db = window.firebaseFirestore;
             const auth = window.firebaseAuth;
             const user = auth.currentUser;
-            const container = document.createElement('div');
-            container.className = 'applications-list';
-            if (!user) {
-                container.innerHTML = `<div style="text-align: center; padding: 40px 20px;"><p style="color: var(--color-text-light); font-size: 18px;">Please sign in to view your applications.</p></div>`;
-                return container.outerHTML;
-            }
-            // Query Firestore for notifications for this student
-            window.firebaseGetDocs(
-                window.firebaseQuery(
-                    window.firebaseCollection(db, 'notifications'),
-                    window.firebaseWhere('studentId', '==', user.uid)
-                )
-            ).then(querySnapshot => {
-                if (querySnapshot.empty) {
-                    container.innerHTML = `<div style=\"text-align: center; padding: 40px 20px;\"><p style=\"color: var(--color-text-light); font-size: 18px;\">No notifications yet</p><p style=\"color: var(--color-text-light); margin-top: 8px;\">Start applying for jobs to see your application history here!</p></div>`;
-                } else {
-                    querySnapshot.forEach(docSnap => {
-                        const notif = docSnap.data();
-                        let timerHtml = '';
-                        let statusHtml = '';
-                        if (notif.status === 'accepted') {
-                            statusHtml = `<span style=\"color: #22c55e; font-weight: 600;\">Accepted</span>`;
-                            if (notif.expiresAt) {
-                                const expires = new Date(notif.expiresAt);
-                                const now = new Date();
-                                const msLeft = expires - now;
-                                if (msLeft > 0) {
-                                    const min = Math.floor(msLeft / 60000);
-                                    const sec = Math.floor((msLeft % 60000) / 1000);
-                                    timerHtml = `<div style='color:#f59e42;margin-bottom:8px;'>You have ${min}m ${sec}s to start the job and submit your work.</div>`;
-                                } else {
-                                    timerHtml = `<div style='color:#dc2626;margin-bottom:8px;'>Your acceptance window has expired.</div>`;
-                                }
-                            }
-                        } else if (notif.status === 'rejected') {
-                            statusHtml = `<span style=\"color: #dc2626; font-weight: 600;\">Rejected</span>`;
-                        }
-                        container.innerHTML += `
-                            <div class=\"application-item\" style=\"padding: 16px; border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 16px;\">
-                                <h4 style=\"color: var(--color-secondary); margin-bottom: 8px;\">${notif.jobTitle}</h4>
-                                <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Company: ${notif.employerName}</p>
-                                <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Status: ${statusHtml}</p>
-                                ${timerHtml}
-                                ${notif.status === 'rejected' ? `<div style='color:#dc2626;margin-bottom:8px;'>You were rejected by ${notif.employerName}.</div>` : ''}
-                            </div>
-                        `;
-                    });
-                }
-            });
-            return container.outerHTML;
+            // Show loading state
+            return `<div id="applications-loading" style="text-align:center;padding:40px 20px;">Loading applications...</div>`;
         }
     };
 
@@ -246,6 +200,66 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Setup form handlers
             setupFormHandlers(section);
+
+            // Special handling for applications section (fetch async)
+            if (section === 'applications') {
+                const db = window.firebaseFirestore;
+                const auth = window.firebaseAuth;
+                const user = auth.currentUser;
+                const container = document.createElement('div');
+                container.className = 'applications-list';
+                if (!user) {
+                    container.innerHTML = `<div style="text-align: center; padding: 40px 20px;"><p style="color: var(--color-text-light); font-size: 18px;">Please sign in to view your applications.</p></div>`;
+                    modalBody.innerHTML = container.outerHTML;
+                    return;
+                }
+                (async () => {
+                    try {
+                        const q = query(collection(db, 'applications'), where('studentId', '==', user.uid));
+                        const querySnapshot = await getDocs(q);
+                        if (querySnapshot.empty) {
+                            container.innerHTML = `<div style="text-align: center; padding: 40px 20px;"><p style="color: var(--color-text-light); font-size: 18px;">No job applications yet</p><p style="color: var(--color-text-light); margin-top: 8px;">Start applying for jobs to see your application history here!</p></div>`;
+                        } else {
+                            querySnapshot.forEach(docSnap => {
+                                const app = docSnap.data();
+                                let statusHtml = '';
+                                if (app.status === 'accepted') {
+                                    statusHtml = `<span style=\"color: #22c55e; font-weight: 600;\">Accepted</span>`;
+                                } else if (app.status === 'rejected') {
+                                    statusHtml = `<span style=\"color: #dc2626; font-weight: 600;\">Rejected</span>`;
+                                } else {
+                                    statusHtml = `<span style=\"color: #f59e42; font-weight: 600;\">Applied</span>`;
+                                }
+                                container.innerHTML += `
+                                    <div class=\"application-item\" style=\"padding: 16px; border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 16px;\">
+                                        <h4 style=\"color: var(--color-secondary); margin-bottom: 8px;\">${app.jobTitle}</h4>
+                                        <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Company: ${app.employerName}</p>
+                                        <p style=\"color: var(--color-text-light); margin-bottom: 4px;\">Status: ${statusHtml}</p>
+                                        <p style=\"color: var(--color-text-light);\">Applied: ${app.appliedAt ? new Date(app.appliedAt).toLocaleString() : ''}</p>
+                                    </div>
+                                `;
+                            });
+                        }
+                        modalBody.innerHTML = container.outerHTML;
+                    } catch (err) {
+                        container.innerHTML = `<div style=\"color:#dc2626;text-align:center;padding:40px 20px;\">Error loading applications: ${err.message}</div>`;
+                        modalBody.innerHTML = container.outerHTML;
+                    }
+                })();
+            }
+
+            // Always reload profile picture in modal (for personal section)
+            if (section === 'personal') {
+                // Load profile picture if available
+                const profilePicture = document.getElementById('profilePicture');
+                const savedProfilePic = localStorage.getItem('profilePicture');
+                if (profilePicture && savedProfilePic) {
+                    const img = document.createElement('img');
+                    img.src = savedProfilePic;
+                    profilePicture.innerHTML = '';
+                    profilePicture.appendChild(img);
+                }
+            }
         });
     });
 
