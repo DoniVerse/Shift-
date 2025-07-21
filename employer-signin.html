@@ -21,11 +21,11 @@
                 
                 <form id="employer-signin-form" class="signin-form">
                     <div class="form-field">
-                        <input type="email" id="employer-email" placeholder="Email" required>
+                        <input type="email" id="employer-email" name="employer-email" placeholder="Email" required>
                     </div>
                     
                     <div class="form-field">
-                        <input type="password" id="employer-password" placeholder="Password" required>
+                        <input type="password" id="employer-password" name="employer-password" placeholder="Password" required>
                     </div>
                     
                     <div class="form-options">
@@ -62,52 +62,9 @@
     </div>
 
     <script>
-        document.getElementById('employer-signin-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('employer-email').value;
-            const password = document.getElementById('employer-password').value;
-            
-            if (email && password) {
-                // Check if employer already exists in localStorage from signup
-                const existingEmployer = JSON.parse(localStorage.getItem('employerInfo') || '{}');
-
-                if (existingEmployer.email === email) {
-                    // Use existing employer data
-                    const employerData = {
-                        ...existingEmployer,
-                        userType: 'employer'
-                    };
-                    localStorage.setItem('currentUser', JSON.stringify(employerData));
-                    localStorage.setItem('employerInfo', JSON.stringify(employerData));
-
-                    alert(`Welcome back, ${employerData.name}!`);
-                    window.location.href = 'job-catagory.html';
-                } else {
-                    // Create new employer if not found (for demo)
-                    const employerName = prompt('Enter your company name:') || 'Your Company';
-                    const employerData = {
-                        name: employerName,
-                        email: email,
-                        userType: 'employer',
-                        type: 'Law Firm'
-                    };
-
-                    localStorage.setItem('currentUser', JSON.stringify(employerData));
-                    localStorage.setItem('employerInfo', JSON.stringify(employerData));
-
-                    alert(`Welcome, ${employerName}!`);
-                    window.location.href = 'job-catagory.html';
-                }
-            } else {
-                alert('Please fill in all required fields');
-            }
-        });
-
         function handleGoogleSignIn() {
             // Google sign-in functionality would be implemented here
         }
-
         // Form validation
         const inputs = document.querySelectorAll('input[type="email"], input[type="password"]');
         inputs.forEach(input => {
@@ -115,7 +72,7 @@
                 if (this.hasAttribute('required') && !this.value) {
                     this.style.borderColor = '#dc2626';
                 } else if (this.type === 'email' && this.value) {
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    const emailRegex = /^[^\s@]+@[^ 0-9]+\.[^\s@]+$/;
                     if (!emailRegex.test(this.value)) {
                         this.style.borderColor = '#dc2626';
                     } else {
@@ -126,6 +83,7 @@
                 }
             });
         });
+        // No authentication logic here; handled by firebase-auth.js
     </script>
     <!-- Firebase Authentication -->
     <script type="module" src="firebase-auth.js"></script>

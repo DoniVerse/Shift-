@@ -20,43 +20,44 @@
                 
                 <form id="employer-signup-form" class="signup-form">
                     <div class="form-field">
-                        <select id="employer-type" required>
+                        <select id="employer-type" name="employer-type" required>
                             <option value="">Select your organization type</option>
-                            <option value="law-firm">government</option>
-                            <option value="corporate">NGO</option>
-                            <option value="government">start-up</option>
-                            <option value="non-profit">Enterprise</option>
-                            
+                            <option value="law-firm">Law Firm</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="government">Government</option>
+                            <option value="non-profit">Non-Profit</option>
+                            <option value="startup">Start-up</option>
+                            <option value="enterprise">Enterprise</option>
                         </select>
                         <div class="dropdown-arrow">▼</div>
                     </div>
                     <!-- Logo upload field -->
                     <div class="form-field">
                         <label for="employer-logo" style="display:block;margin-bottom:4px;">Company Logo</label>
-                        <input type="file" id="employer-logo" accept="image/*">
+                        <input type="file" id="employer-logo" name="employer-logo" accept="image/*">
                         <div id="logo-preview-container" style="margin-top:8px;">
                             <img id="logo-preview" src="" alt="Logo Preview" style="display:none;max-width:80px;max-height:80px;border-radius:8px;" />
                         </div>
                     </div>
                     
                     <div class="form-field">
-                        <input type="text" id="employer-name" placeholder="Full Name / Company Name" required>
+                        <input type="text" id="employer-name" name="employer-name" placeholder="Full Name / Company Name" required>
                     </div>
                     
                     <div class="form-field">
-                        <input type="text" id="employer-reg" placeholder="Company Registration Number (Optional)">
+                        <input type="text" id="employer-reg" name="employer-reg" placeholder="Company Registration Number (Optional)">
                     </div>
                     
                     <div class="form-field">
-                        <input type="email" id="employer-email" placeholder="Email" required>
+                        <input type="email" id="employer-email" name="employer-email" placeholder="Email" required>
                     </div>
                     
                     <div class="form-field">
-                        <input type="tel" id="employer-phone" placeholder="Phone Number" required>
+                        <input type="tel" id="employer-phone" name="employer-phone" placeholder="Phone Number" required>
                     </div>
                     
                     <div class="form-field">
-                        <input type="password" id="employer-password" placeholder="Password" required>
+                        <input type="password" id="employer-password" name="employer-password" placeholder="Password" required>
                     </div>
                     
                     <button type="submit" class="btn-signup">Sign Up</button>
@@ -139,26 +140,7 @@
             });
         });
 
-        // Save employer info to localStorage on signup
-        document.getElementById('employer-signup-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const employerInfo = {
-                type: document.getElementById('employer-type').value,
-                name: document.getElementById('employer-name').value,
-                reg: document.getElementById('employer-reg').value,
-                email: document.getElementById('employer-email').value,
-                phone: document.getElementById('employer-phone').value,
-                logo: logoDataUrl,
-                userType: 'employer'
-            };
-
-            // Store in both localStorage keys for compatibility
-            localStorage.setItem('employerInfo', JSON.stringify(employerInfo));
-            localStorage.setItem('currentUser', JSON.stringify(employerInfo));
-
-            alert(`Sign up successful! Welcome ${employerInfo.name}!`);
-            window.location.href = 'employer-signin.html';
-        });
+        // No authentication logic here; handled by firebase-auth.js
     </script>
     <!-- Firebase Authentication -->
     <script type="module" src="firebase-auth.js"></script>

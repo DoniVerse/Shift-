@@ -53,7 +53,8 @@ class JobManager {
 
     // Publish a new job
     async publishJob(jobData) {
-        if (!this.currentUser) {
+        const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+        if (!user) {
             throw new Error('User must be authenticated to publish jobs');
         }
 
@@ -70,7 +71,7 @@ class JobManager {
                 categoryTitle: jobData.categoryTitle,
                 employerName: jobData.employerName,
                 employerEmail: jobData.employerEmail,
-                employerId: this.currentUser.uid,
+                employerId: user.uid,
                 status: 'active',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -169,11 +170,15 @@ class JobManager {
 
     // Get jobs by employer
     async getJobsByEmployer(employerId) {
-        try {
-            if (!employerId) {
-                console.error('🚫 No employerId provided');
+        if (!employerId) {
+            const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+            if (!user) {
+                console.error('No employerId provided and no user logged in');
                 return [];
             }
+            employerId = user.uid;
+        }
+        try {
             console.log('🔍 Fetching jobs for employer:', employerId);
 
             const q = query(
@@ -211,6 +216,7 @@ class JobManager {
                 jobCategory: applicationData.jobCategory,
                 employerName: applicationData.employerName,
                 employerEmail: applicationData.employerEmail,
+                employerId: applicationData.employerId, // Ensures the employer's UID is saved with the application
                 studentName: applicationData.studentName,
                 studentEmail: applicationData.studentEmail,
                 studentYear: applicationData.studentYear,
@@ -239,13 +245,17 @@ class JobManager {
     }
 
     // Get applications for employer
-    async getApplicationsByEmployer(employerEmail) {
+    async getApplicationsByEmployer(employerId) {
         try {
-            console.log('🔍 Fetching applications for employer:', employerEmail);
+            if (!employerId) {
+                console.error('🚫 No employerId provided for getting applications');
+                return [];
+            }
+            console.log('🔍 Fetching applications for employer ID:', employerId);
             
             const q = query(
                 collection(this.db, this.applicationsCollection),
-                where('employerEmail', '==', employerEmail),
+                where('employerId', '==', employerId), // Correctly query by employer's UID
                 orderBy('createdAt', 'desc')
             );
 
@@ -259,7 +269,7 @@ class JobManager {
                 });
             });
 
-            console.log(`✅ Found ${applications.length} applications for employer ${employerEmail}`);
+            console.log(`✅ Found ${applications.length} applications for employer ${employerId}`);
             return applications;
         } catch (error) {
             console.error('❌ Error fetching applications:', error);

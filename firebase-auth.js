@@ -145,6 +145,7 @@ class FirebaseAuthManager {
             phone: document.getElementById('employer-phone')?.value,
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
+            logo: window.logoDataUrl || '', // Use the previewed logo data URL if available
             userType: 'employer'
         };
 
@@ -320,6 +321,9 @@ class FirebaseAuthManager {
             }
             if (userData.registrationNumber && isSafeValue(userData.registrationNumber)) {
                 userProfile.registrationNumber = userData.registrationNumber;
+            }
+            if (userData.logo && isSafeValue(userData.logo)) {
+                userProfile.logo = userData.logo;
             }
         }
 

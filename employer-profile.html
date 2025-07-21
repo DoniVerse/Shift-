@@ -103,23 +103,45 @@
             window.history.back();
         }
 
-        // Load employer info from localStorage
-        let employerInfo = null;
-        try {
-            employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
-        } catch (e) {}
-
-        // Set profile section
-        if (employerInfo) {
-            document.getElementById('profile-company-name').textContent = employerInfo.name || 'Company Name';
-            if (employerInfo.logo) {
-                document.getElementById('company-logo').src = employerInfo.logo;
-                document.getElementById('company-logo').style.display = 'block';
-                document.getElementById('default-avatar').style.display = 'none';
-            } else {
-                document.getElementById('company-logo').style.display = 'none';
-                document.getElementById('default-avatar').style.display = 'block';
+        // Load employer info from Firestore, fallback to localStorage if not found
+        async function loadEmployerInfo(user) {
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            let employerInfo = null;
+            try {
+                const userDocRef = doc(window.firebaseFirestore, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    employerInfo = userDoc.data();
+                } else {
+                    employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
+                }
+            } catch (error) {
+                employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
             }
+            // Update UI
+            if (employerInfo) {
+                document.getElementById('profile-company-name').textContent =
+                    employerInfo.companyName || employerInfo.name || employerInfo.displayName || 'Company Name';
+                if (employerInfo.logo) {
+                    document.getElementById('company-logo').src = employerInfo.logo;
+                    document.getElementById('company-logo').style.display = 'block';
+                    document.getElementById('default-avatar').style.display = 'none';
+                } else {
+                    document.getElementById('company-logo').style.display = 'none';
+                    document.getElementById('default-avatar').style.display = 'block';
+                }
+            }
+        }
+
+        // Initialize profile when auth state changes
+        if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
+            window.firebaseAuth.onAuthStateChange(async (user) => {
+                if (!user) {
+                    window.location.href = 'employer-signin.html';
+                    return;
+                }
+                await loadEmployerInfo(user);
+            });
         }
 
         function showModal(title, content) {
@@ -135,27 +157,28 @@
         }
 
         function showCompanyInfo() {
-            if (!employerInfo) {
-                showModal('Company Information', '<div>No company information available.</div>');
+            const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+            if (!user) {
+                showModal('Company Information', '<div>Please sign in to view your company information.</div>');
                 return;
             }
             const content = `
                 <div class="info-section">
                     <div class="info-item">
                         <strong>Company Name:</strong>
-                        <span>${employerInfo.name || ''}</span>
+                        <span>${user.displayName || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Type:</strong>
-                        <span>${employerInfo.type || ''}</span>
+                        <span>${user.companyType || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Phone:</strong>
-                        <span>${employerInfo.phone || ''}</span>
+                        <span>${user.phone || ''}</span>
                     </div>
                     <div class="info-item">
                         <strong>Email:</strong>
-                        <span>${employerInfo.email || ''}</span>
+                        <span>${user.email || ''}</span>
                     </div>
                 </div>
             `;
@@ -209,20 +232,22 @@
         }
 
         async function viewApplications() {
-            if (!employerInfo || !employerInfo.email) {
-                showModal('Job Applications', '<p>Employer info not found.</p>');
+            const user = window.firebaseAuth.getCurrentUser();
+            if (!user) {
+                showModal('Job Applications', '<p>Please sign in to view applications.</p>');
                 return;
             }
-            // Show loading
             showModal('Job Applications', '<p>Loading applications...</p>');
             let applications = [];
             try {
                 if (window.jobManager && window.jobManager.getApplicationsByEmployer) {
-                    applications = await window.jobManager.getApplicationsByEmployer(employerInfo.email);
+                    applications = await window.jobManager.getApplicationsByEmployer(user.uid);
                 }
             } catch (e) {
-                showModal('Job Applications', '<p>Failed to load applications: ' + e.message + '</p>');
-                return;
+                // Fallback to localStorage only on error
+                const allApps = JSON.parse(localStorage.getItem('applications') || '[]');
+                const employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
+                applications = allApps.filter(app => app.employerEmail === (employerInfo?.email));
             }
             if (!applications.length) {
                 showModal('Job Applications', '<p>No applications received yet.</p>');
