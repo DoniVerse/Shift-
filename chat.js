@@ -307,7 +307,11 @@ class ChatApp {
     // Update user interface with user data
     updateUserInterface(userData) {
         this.currentUserName.textContent = userData.name || 'User';
-        this.currentUserType.textContent = userData.userType || 'Student';
+        let typeLabel = 'Student';
+        if (userData.userType === 'employer') typeLabel = 'Employer';
+        else if (userData.userType === 'admin') typeLabel = 'Admin';
+        else if (userData.userType === 'student') typeLabel = 'Student';
+        this.currentUserType.textContent = typeLabel;
 
         if (userData.profilePicture) {
             this.currentUserAvatar.src = userData.profilePicture;

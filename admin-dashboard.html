@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="employer-signin-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="signin-card" style="max-width:900px;">
+            <div class="header" style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="logo-container">
+                    <div class="logo">A</div>
+                </div>
+                <h1 class="page-title" style="margin:0;">Admin Dashboard</h1>
+                <button id="admin-logout-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">Logout</button>
+            </div>
+            <div class="content" style="display:flex;gap:40px;flex-wrap:wrap;">
+                <div style="flex:2;min-width:320px;">
+                    <h2 style="font-size:1.2rem;margin-bottom:10px;">Applications Overview</h2>
+                    <div id="applications-overview">
+                        <p>Loading applications data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Bottom navigation with chat button -->
+    <nav style="position:fixed;bottom:0;left:0;width:100vw;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;justify-content:center;align-items:center;padding:10px 0;z-index:10001;">
+        <button onclick="window.location.href='chat.html'" style="background:#d17e7e;color:#fff;border:none;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 2px 8px rgba(209,126,126,0.15);cursor:pointer;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+    </nav>
+    <script type="module">
+        import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        // Firebase config (reuse from firebase-auth.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+            authDomain: "shift-3140e.firebaseapp.com",
+            databaseURL: "https://shift-3140e-default-rtdb.firebaseio.com",
+            projectId: "shift-3140e",
+            storageBucket: "shift-3140e.firebasestorage.app",
+            messagingSenderId: "716245939154",
+            appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+            measurementId: "G-F6WJ0T3E71"
+        };
+        let app;
+        if (!getApps().length) {
+            app = initializeApp(firebaseConfig);
+        } else {
+            app = getApp();
+        }
+        const db = getFirestore(app);
+        // Helper to get employer info
+        async function getEmployerInfo(uid) {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            return userDoc.exists() ? userDoc.data() : null;
+        }
+        // Helper to get job info
+        async function getJobInfo(jobId) {
+            const jobDoc = await getDoc(doc(db, 'jobs', jobId));
+            return jobDoc.exists() ? jobDoc.data() : null;
+        }
+        // Helper to get student info
+        async function getStudentInfo(uid) {
+            if (!uid) return null;
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            return userDoc.exists() ? userDoc.data() : null;
+        }
+        // Load all applications and group by employer/job
+        async function loadApplicationsOverview() {
+            const applicationsCol = collection(db, 'applications');
+            const snapshot = await getDocs(applicationsCol);
+            const applications = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                applications.push({ id: docSnap.id, ...data });
+            });
+            // Group by employer and job
+            const employerMap = {};
+            for (const app of applications) {
+                if (!app.employerId) continue;
+                if (!employerMap[app.employerId]) employerMap[app.employerId] = { jobs: {}, employerInfo: null };
+                if (!employerMap[app.employerId].jobs[app.jobId]) employerMap[app.employerId].jobs[app.jobId] = { jobInfo: null, applications: [] };
+                employerMap[app.employerId].jobs[app.jobId].applications.push(app);
+            }
+            // Fetch employer, job, and student info
+            for (const employerId of Object.keys(employerMap)) {
+                employerMap[employerId].employerInfo = await getEmployerInfo(employerId);
+                for (const jobId of Object.keys(employerMap[employerId].jobs)) {
+                    employerMap[employerId].jobs[jobId].jobInfo = await getJobInfo(jobId);
+                    // Fetch student info for each application
+                    for (const app of employerMap[employerId].jobs[jobId].applications) {
+                        if (!app.studentName && app.studentId) {
+                            const studentInfo = await getStudentInfo(app.studentId);
+                            app.studentName = studentInfo ? (studentInfo.fullName || studentInfo.name || studentInfo.displayName || studentInfo.email || app.studentId) : app.studentId;
+                        }
+                    }
+                }
+            }
+            // Render
+            const container = document.getElementById('applications-overview');
+            if (!container) return;
+            let html = '';
+            for (const [employerId, employerData] of Object.entries(employerMap)) {
+                const employerName = employerData.employerInfo?.companyName || employerData.employerInfo?.name || employerId;
+                html += `<div style="margin-bottom:24px;"><h3 style="margin-bottom:8px;">Employer: ${employerName}</h3>`;
+                for (const [jobId, jobData] of Object.entries(employerData.jobs)) {
+                    const jobTitle = jobData.jobInfo?.title || jobId;
+                    html += `<div style="margin-left:16px;margin-bottom:8px;"><strong>Job:</strong> ${jobTitle}<ul style="margin:8px 0 8px 24px;">`;
+                    for (const app of jobData.applications) {
+                        html += `<li><strong>Student:</strong> ${app.studentName || app.studentId || 'Unknown'} | <strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'#dc2626':'#eab308'};font-weight:bold;">${app.status || 'pending'}</span></li>`;
+                    }
+                    html += '</ul></div>';
+                }
+                html += '</div>';
+            }
+            if (!html) html = '<p>No applications found.</p>';
+            container.innerHTML = html;
+        }
+        document.addEventListener('DOMContentLoaded', loadApplicationsOverview);
+        // Block access for non-admins
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (user.userType !== 'admin') {
+                alert('Access denied. Only admins can access this page.');
+                window.location.href = 'admin-signin.html';
+            }
+        });
+        // Logout logic for admin
+        document.getElementById('admin-logout-btn').addEventListener('click', function() {
+            if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {
+                window.firebaseAuth.signOutUser();
+            } else {
+                localStorage.clear();
+                window.location.href = 'admin-signin.html';
+            }
+        });
+        // Placeholder: Applications and chat will be loaded here in next steps
+    </script>
+    <script src="chat-integration-widget.js"></script>
+</body>
+</html> 

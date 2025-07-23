@@ -255,8 +255,9 @@
             }
             let applicationsHTML = '<div style="max-height: 400px; overflow-y: auto;">';
             applications.forEach((app, index) => {
+                const isAccepted = app.status === 'accepted';
                 applicationsHTML += `
-                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;">
+                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9; position:relative;">
                         <h4>${app.jobTitle}</h4>
                         <p><strong>Applicant:</strong> ${app.studentName}</p>
                         <p><strong>Email:</strong> ${app.studentEmail}</p>
@@ -265,22 +266,46 @@
                         <p><strong>Department:</strong> ${app.studentDepartment}</p>
                         <p><strong>Applied:</strong> ${app.createdAt && app.createdAt.toDate ? app.createdAt.toDate().toLocaleDateString() : (app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : '')}</p>
                         <p><strong>Status:</strong> <span style="color: green;">${app.status}</span></p>
-                        <div style="margin-top: 10px;">
+                        <div id="action-row-${index}" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
                             <button onclick="contactStudent('${app.studentEmail}', '${app.studentName}')" style="background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                                 Contact Student
                             </button>
-                            <button onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}')" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-                                Accept
-                            </button>
-                            <button onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                                Reject
-                            </button>
+                            ${isAccepted ? '' : `<button id="accept-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}', ${index})" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Accept</button>`}
+                            ${isAccepted ? '' : `<button id="reject-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>`}
+                            <span id="qr-code-${index}" style="margin-left: 10px; ${isAccepted ? 'display:inline-block;' : 'display:none;'}">
+                                ${isAccepted ? `<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a>` : ''}
+                            </span>
                         </div>
                     </div>
                 `;
             });
             applicationsHTML += '</div>';
             showModal('Job Applications', applicationsHTML);
+
+            // Add QR code logic for Accept buttons
+            applications.forEach((app, index) => {
+                const acceptBtn = document.getElementById(`accept-btn-${index}`);
+                if (acceptBtn) {
+                    acceptBtn.addEventListener('click', function() {
+                        setTimeout(() => {
+                            // Hide Accept and Reject, show QR code and Contact Student only
+                            const actionRow = document.getElementById(`action-row-${index}`);
+                            if (actionRow) {
+                                const accept = document.getElementById(`accept-btn-${index}`);
+                                const reject = document.getElementById(`reject-btn-${index}`);
+                                if (accept) accept.style.display = 'none';
+                                if (reject) reject.style.display = 'none';
+                                // Show QR code (persist and clickable)
+                                const qrSpan = document.getElementById(`qr-code-${index}`);
+                                if (qrSpan) {
+                                    qrSpan.innerHTML = `<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a>`;
+                                    qrSpan.style.display = 'inline-block';
+                                }
+                            }
+                        }, 200); // Wait for status update
+                    });
+                }
+            });
         }
 
         function contactStudent(email, name) {
@@ -314,8 +339,12 @@
 
         // Logout logic
         document.getElementById('logout-btn').addEventListener('click', function() {
-            localStorage.removeItem('employerInfo');
-            window.location.href = 'employer-signin.html';
+            if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {
+                window.firebaseAuth.signOutUser();
+            } else {
+                localStorage.clear();
+                window.location.href = 'employer-signin.html';
+            }
         });
     </script>
     <script>

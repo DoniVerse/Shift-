@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Sign In</title>
+    <link rel="stylesheet" href="employer-signin-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="signin-card">
+            <div class="header">
+                <div class="logo-container">
+                    <div class="logo">A</div>
+                </div>
+            </div>
+            <div class="content">
+                <h1 class="page-title">Admin Portal</h1>
+                <p class="subtitle">Sign in to your admin account</p>
+                <form id="admin-signin-form" class="signin-form">
+                    <div class="form-field">
+                        <input type="email" id="admin-email" name="admin-email" placeholder="Admin Email" required>
+                    </div>
+                    <div class="form-field">
+                        <input type="password" id="admin-password" name="admin-password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn-signin">Sign In</button>
+                </form>
+                <div id="admin-update-section" style="display:none; margin-top:30px;">
+                    <h2 style="font-size:1.1rem; margin-bottom:10px;">Update Admin Credentials</h2>
+                    <form id="admin-update-form" class="signin-form">
+                        <div class="form-field">
+                            <input type="email" id="new-admin-email" name="new-admin-email" placeholder="New Admin Email" required>
+                        </div>
+                        <div class="form-field">
+                            <input type="password" id="new-admin-password" name="new-admin-password" placeholder="New Admin Password" required>
+                        </div>
+                        <button type="submit" class="btn-signin">Update Credentials</button>
+                    </form>
+                </div>
+            </div>
+            <button id="admin-logout-btn" style="margin: 24px auto 0 auto; display: none; width: 100%; padding: 10px 0; background: #dc2626; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+    <script type="module">
+        import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getAuth, signInWithEmailAndPassword, updateEmail, updatePassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        // Firebase config (reuse from firebase-auth.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
+            authDomain: "shift-3140e.firebaseapp.com",
+            databaseURL: "https://shift-3140e-default-rtdb.firebaseio.com",
+            projectId: "shift-3140e",
+            storageBucket: "shift-3140e.firebasestorage.app",
+            messagingSenderId: "716245939154",
+            appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
+            measurementId: "G-F6WJ0T3E71"
+        };
+        let app;
+        if (!getApps().length) {
+            app = initializeApp(firebaseConfig);
+        } else {
+            app = getApp();
+        }
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        // Admin credentials doc in Firestore
+        const adminDocRef = doc(db, 'admin', 'credentials');
+        // On page load, prefill admin email
+        document.addEventListener('DOMContentLoaded', async () => {
+            const docSnap = await getDoc(adminDocRef);
+            if (docSnap.exists()) {
+                document.getElementById('admin-email').value = docSnap.data().email;
+            } else {
+                // If not in Firestore, set default
+                await setDoc(adminDocRef, { email: 'beti123@gmail.com', password: '123456789' });
+                document.getElementById('admin-email').value = 'beti123@gmail.com';
+            }
+        });
+        // Show logout button after admin signs in
+        function showAdminLogout() {
+            const btn = document.getElementById('admin-logout-btn');
+            if (btn) btn.style.display = 'block';
+        }
+        // Signin logic
+        document.getElementById('admin-signin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            const docSnap = await getDoc(adminDocRef);
+            if (!docSnap.exists() || docSnap.data().email !== email || docSnap.data().password !== password) {
+                alert('Invalid admin credentials.');
+                return;
+            }
+            // Try Firebase Auth sign in (if admin user exists)
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Save admin session
+                localStorage.setItem('currentUser', JSON.stringify({ email, userType: 'admin' }));
+                localStorage.setItem('userAuthenticated', 'true');
+                // Show update section
+                document.getElementById('admin-update-section').style.display = 'block';
+                alert('Admin signed in successfully!');
+                showAdminLogout();
+                window.location.href = 'admin-dashboard.html';
+            } catch (err) {
+                console.error('Firebase Auth sign-in error:', err);
+                alert('Signed in with Firestore credentials only. (Admin user not in Firebase Auth)\n\nFirebase error: ' + (err && err.message ? err.message : err));
+                document.getElementById('admin-update-section').style.display = 'block';
+                showAdminLogout();
+            }
+        });
+        // Update admin credentials
+        document.getElementById('admin-update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newEmail = document.getElementById('new-admin-email').value.trim();
+            const newPassword = document.getElementById('new-admin-password').value.trim();
+            // Update Firestore
+            await updateDoc(adminDocRef, { email: newEmail, password: newPassword });
+            // If signed in as admin in Firebase Auth, update there too
+            if (auth.currentUser) {
+                try {
+                    await updateEmail(auth.currentUser, newEmail);
+                    await updatePassword(auth.currentUser, newPassword);
+                } catch (err) {
+                    // Ignore errors if not signed in as admin in Firebase Auth
+                }
+            }
+            alert('Admin credentials updated!');
+            document.getElementById('admin-email').value = newEmail;
+            document.getElementById('admin-password').value = '';
+            document.getElementById('new-admin-email').value = '';
+            document.getElementById('new-admin-password').value = '';
+        });
+        // Logout logic for admin
+        document.getElementById('admin-logout-btn').addEventListener('click', function() {
+            if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {
+                window.firebaseAuth.signOutUser();
+            } else {
+                localStorage.clear();
+                window.location.href = 'admin-signin.html';
+            }
+        });
+        // Block access for non-admins
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (user.userType && user.userType !== 'admin') {
+                alert('Access denied. Only admins can access this page.');
+                window.location.href = 'landing.html';
+            }
+        });
+    </script>
+</body>
+</html> 

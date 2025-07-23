@@ -789,11 +789,21 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 900px) {
+    .chat-container {
+        max-width: 100vw;
+        box-shadow: none;
+    }
+    .chat-sidebar {
+        width: 260px;
+    }
+}
 @media (max-width: 768px) {
     .chat-container {
+        flex-direction: column;
         height: 100vh;
+        min-width: 0;
     }
-    
     .chat-sidebar {
         position: absolute;
         left: 0;
@@ -802,22 +812,66 @@ body {
         z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        width: 80vw;
+        min-width: 220px;
+        max-width: 320px;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.08);
     }
-    
     .chat-sidebar.open {
         transform: translateX(0);
     }
-    
     .chat-main {
-        width: 100%;
+        width: 100vw;
+        min-width: 0;
     }
-    
     .back-btn {
         display: flex;
     }
-    
     .message-bubble {
-        max-width: 85%;
+        max-width: 90vw;
+    }
+    .welcome-content {
+        padding: 20px 10px;
+    }
+}
+@media (max-width: 600px) {
+    .chat-sidebar {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        box-shadow: none;
+    }
+    .sidebar-header, .search-container, .conversations-list, .conversation-item {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .chat-header, .message-input-container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .messages-container {
+        padding: 10px 2px;
+    }
+    .message-bubble {
+        font-size: 15px;
+        padding: 8px 10px;
+    }
+    .user-avatar img, .conversation-avatar img, .chat-user-avatar img {
+        width: 32px;
+        height: 32px;
+    }
+}
+@media (max-width: 400px) {
+    .chat-header, .message-input-container, .sidebar-header, .search-container {
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+    .welcome-content {
+        padding: 8px 2px;
+    }
+    .message-bubble {
+        font-size: 13px;
+        padding: 6px 6px;
     }
 }
 
