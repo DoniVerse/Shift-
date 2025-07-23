@@ -256,8 +256,10 @@
             let applicationsHTML = '<div style="max-height: 400px; overflow-y: auto;">';
             applications.forEach((app, index) => {
                 const isAccepted = app.status === 'accepted';
+                const isStarted = app.status === 'started';
+                const isFinished = app.status === 'finished';
                 applicationsHTML += `
-                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9; position:relative;">
+                    <div id="application-card-${index}" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9; position:relative;">
                         <h4>${app.jobTitle}</h4>
                         <p><strong>Applicant:</strong> ${app.studentName}</p>
                         <p><strong>Email:</strong> ${app.studentEmail}</p>
@@ -270,11 +272,12 @@
                             <button onclick="contactStudent('${app.studentEmail}', '${app.studentName}')" style="background: #d17e7e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
                                 Contact Student
                             </button>
-                            ${isAccepted ? '' : `<button id="accept-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}', ${index})" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Accept</button>`}
-                            ${isAccepted ? '' : `<button id="reject-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>`}
-                            <span id="qr-code-${index}" style="margin-left: 10px; ${isAccepted ? 'display:inline-block;' : 'display:none;'}">
-                                ${isAccepted ? `<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a>` : ''}
-                            </span>
+                            ${isAccepted && !isStarted && !isFinished ? `<button id='start-btn-${index}' style='background: #eab308; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Start</button>` : ''}
+                            ${isAccepted && !isStarted && !isFinished ? `<button id='finished-btn-${index}' style='background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Finished</button>` : ''}
+                            ${isStarted && !isFinished ? `<button id='finished-btn-${index}' style='background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Finished</button>` : ''}
+                            ${isAccepted || isStarted ? `<span id="qr-code-${index}" style="margin-left: 10px; display:inline-block;"><a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a></span>` : `<span id="qr-code-${index}" style="margin-left: 10px; display:none;"></span>`}
+                            ${!isAccepted && !isStarted && !isFinished ? `<button id="accept-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}', ${index})" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Accept</button>` : ''}
+                            ${!isAccepted && !isStarted && !isFinished ? `<button id="reject-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -282,13 +285,13 @@
             applicationsHTML += '</div>';
             showModal('Job Applications', applicationsHTML);
 
-            // Add QR code logic for Accept buttons
+            // Add QR code and status logic for Accept/Start/Finished buttons
             applications.forEach((app, index) => {
+                // Accept button logic (existing)
                 const acceptBtn = document.getElementById(`accept-btn-${index}`);
                 if (acceptBtn) {
                     acceptBtn.addEventListener('click', function() {
                         setTimeout(() => {
-                            // Hide Accept and Reject, show QR code and Contact Student only
                             const actionRow = document.getElementById(`action-row-${index}`);
                             if (actionRow) {
                                 const accept = document.getElementById(`accept-btn-${index}`);
@@ -301,9 +304,53 @@
                                     qrSpan.innerHTML = `<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a>`;
                                     qrSpan.style.display = 'inline-block';
                                 }
+                                // Show Start and Finished buttons
+                                let startBtn = document.getElementById(`start-btn-${index}`);
+                                let finishedBtn = document.getElementById(`finished-btn-${index}`);
+                                if (!startBtn) {
+                                    startBtn = document.createElement('button');
+                                    startBtn.id = `start-btn-${index}`;
+                                    startBtn.textContent = 'Start';
+                                    startBtn.style = 'background: #eab308; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;';
+                                    actionRow.insertBefore(startBtn, qrSpan);
+                                }
+                                if (!finishedBtn) {
+                                    finishedBtn = document.createElement('button');
+                                    finishedBtn.id = `finished-btn-${index}`;
+                                    finishedBtn.textContent = 'Finished';
+                                    finishedBtn.style = 'background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;';
+                                    actionRow.insertBefore(finishedBtn, qrSpan);
+                                }
+                                // Add event listeners
+                                startBtn.onclick = async function() {
+                                    await window.handleApplicationAction && window.handleApplicationAction(app.id, 'started', app.studentId || '', index);
+                                };
+                                finishedBtn.onclick = async function() {
+                                    await window.handleApplicationAction && window.handleApplicationAction(app.id, 'finished', app.studentId || '', index);
+                                    // Remove application card from view
+                                    const card = document.getElementById(`application-card-${index}`);
+                                    if (card) card.remove();
+                                };
                             }
                         }, 200); // Wait for status update
                     });
+                }
+                // Start button logic (persist after refresh)
+                const startBtn = document.getElementById(`start-btn-${index}`);
+                if (startBtn) {
+                    startBtn.onclick = async function() {
+                        await window.handleApplicationAction && window.handleApplicationAction(app.id, 'started', app.studentId || '', index);
+                    };
+                }
+                // Finished button logic (persist after refresh)
+                const finishedBtn = document.getElementById(`finished-btn-${index}`);
+                if (finishedBtn) {
+                    finishedBtn.onclick = async function() {
+                        await window.handleApplicationAction && window.handleApplicationAction(app.id, 'finished', app.studentId || '', index);
+                        // Remove application card from view
+                        const card = document.getElementById(`application-card-${index}`);
+                        if (card) card.remove();
+                    };
                 }
             });
         }
