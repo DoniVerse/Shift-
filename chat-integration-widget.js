@@ -24,12 +24,39 @@ class ChatWidget {
         this.setupEventListeners();
         this.loadUserData();
         
-        // Initialize auth integration if available
-        if (window.authIntegration) {
-            window.authIntegration.onAuthStateChange((user) => {
+        // Initialize Firebase auth integration
+        this.initializeAuth();
+        
+        // Setup real-time notifications
+        this.setupNotifications();
+    }
+    
+    // Initialize Firebase authentication
+    initializeAuth() {
+        // Check if Firebase auth is available
+        if (typeof window.auth !== 'undefined' && window.auth) {
+            // Listen for auth state changes
+            window.auth.onAuthStateChanged((user) => {
                 this.currentUser = user;
                 this.updateWidget();
+                
+                if (user) {
+                    // User signed in, setup notifications
+                    this.setupNotifications();
+                    this.loadConversations();
+                } else {
+                    // User signed out, clear notifications
+                    this.updateUnreadCount(0);
+                }
             });
+        } else {
+            // Fallback to legacy auth integration
+            if (window.authIntegration) {
+                window.authIntegration.onAuthStateChange((user) => {
+                    this.currentUser = user;
+                    this.updateWidget();
+                });
+            }
         }
     }
 
@@ -412,71 +439,221 @@ class ChatWidget {
 
     // Load user data and conversations
     loadUserData() {
-        // Simulate loading conversations
-        setTimeout(() => {
+        // Check if user is already authenticated
+        if (this.currentUser) {
             this.loadConversations();
-        }, 1000);
+        } else {
+            // Wait for auth state to be determined
+            setTimeout(() => {
+                if (this.currentUser) {
+                    this.loadConversations();
+                }
+            }, 2000);
+        }
     }
 
-    // Load conversations (mock data for now)
-    loadConversations() {
+    // Load real conversations from Firebase
+    async loadConversations() {
         const content = this.widget.querySelector('.chat-widget-content');
         
-        // Always pin admin as the first contact
-        const conversations = [
-            {
-                id: 'admin',
-                name: 'Admin',
-                avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                lastMessage: 'How can I help you?',
-                time: 'Online',
-                unread: 0
-            },
-            {
-                id: '1',
-                name: 'John Smith',
-                avatar: 'data:image/svg+xml;base64,' + btoa(`<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="#5a3e5d"/><text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="14">JS</text></svg>`),
-                lastMessage: 'Thanks for the interview opportunity!',
-                time: '2m ago',
-                unread: 2
-            },
-            {
-                id: '2',
-                name: 'Sarah Johnson',
-                avatar: 'data:image/svg+xml;base64,' + btoa(`<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="#d17e7e"/><text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="14">SJ</text></svg>`),
-                lastMessage: 'When can we schedule the next meeting?',
-                time: '1h ago',
-                unread: 0
-            }
-        ];
-        
-        if (conversations.length === 0) {
+        if (!this.currentUser) {
             content.innerHTML = `
                 <div class="chat-widget-empty">
-                    <div class="chat-widget-empty-icon">💬</div>
-                    <div>No conversations yet</div>
-                    <button class="chat-widget-start-chat" onclick="chatWidget.openFullChat()">
-                        Start Chatting
+                    <div class="chat-widget-empty-icon">🔐</div>
+                    <div>Please sign in to view conversations</div>
+                    <button class="chat-widget-start-chat" onclick="window.location.href='/login.html'">
+                        Sign In
                     </button>
                 </div>
             `;
-        } else {
-            content.innerHTML = conversations.map(conv => `
+            return;
+        }
+        
+        try {
+            // Import Firebase functions if available
+            if (typeof window.db === 'undefined') {
+                console.log('Firebase not available, showing empty state');
+                this.showEmptyConversations(content);
+                return;
+            }
+            
+            // Get Firebase functions from global scope or imports
+            const { collection, query, where, onSnapshot, orderBy } = window.firebaseImports || 
+                (typeof window.firebase !== 'undefined' ? window.firebase : {});
+            if (!collection) {
+                console.log('Firebase functions not available');
+                this.showEmptyConversations(content);
+                return;
+            }
+            
+            // Query conversations for current user
+            const conversationsRef = collection(window.db, 'conversations');
+            const q = query(
+                conversationsRef,
+                where('participants', 'array-contains', this.currentUser.uid)
+            );
+            
+            // Listen for real-time updates
+            onSnapshot(q, (snapshot) => {
+                const conversations = [];
+                
+                snapshot.forEach((doc) => {
+                    const conversation = { id: doc.id, ...doc.data() };
+                    conversations.push(conversation);
+                });
+                
+                this.renderConversations(conversations, content);
+            });
+            
+        } catch (error) {
+            console.error('Error loading conversations:', error);
+            this.showEmptyConversations(content);
+        }
+    }
+    
+    // Show empty conversations state
+    showEmptyConversations(content) {
+        content.innerHTML = `
+            <div class="chat-widget-empty">
+                <div class="chat-widget-empty-icon">💬</div>
+                <div>No conversations yet</div>
+                <button class="chat-widget-start-chat" onclick="chatWidget.openFullChat()">
+                    Start Chatting
+                </button>
+            </div>
+        `;
+    }
+    
+    // Render conversations with real data
+    renderConversations(conversations, content) {
+        if (conversations.length === 0) {
+            this.showEmptyConversations(content);
+            return;
+        }
+        
+        // Sort conversations by last message time
+        conversations.sort((a, b) => {
+            const aTime = a.lastMessageTime?.toDate() || a.createdAt?.toDate() || new Date(0);
+            const bTime = b.lastMessageTime?.toDate() || b.createdAt?.toDate() || new Date(0);
+            return bTime - aTime;
+        });
+        
+        // Generate avatar for user
+        const generateAvatar = (name) => {
+            const colors = ['#d17e7e', '#5a3e5d', '#8c6c8e', '#4a3249'];
+            const colorIndex = name ? name.length % colors.length : 0;
+            const initial = name ? name.charAt(0).toUpperCase() : 'U';
+            return `data:image/svg+xml;base64,${btoa(`<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="${colors[colorIndex]}"/><text x="20" y="25" text-anchor="middle" fill="white" font-family="Arial" font-size="14">${initial}</text></svg>`)}`;
+        };
+        
+        const conversationElements = conversations.map(conv => {
+            // Get other participant info
+            const otherParticipantId = conv.participants.find(id => id !== this.currentUser.uid);
+            const userName = conv.participantNames?.[otherParticipantId] || 'Unknown User';
+            const userAvatar = generateAvatar(userName);
+            
+            // Calculate unread count for current user
+            const unreadCount = conv.unreadCount?.[this.currentUser.uid] || 0;
+            
+            // Format time
+            const lastMessageTime = conv.lastMessageTime ? 
+                this.formatTime(conv.lastMessageTime.toDate()) : 'Recently';
+            
+            return `
                 <div class="chat-widget-conversation" onclick="chatWidget.openConversation('${conv.id}')">
-                    <img src="${conv.avatar}" alt="${conv.name}" class="chat-widget-avatar">
+                    <img src="${userAvatar}" alt="${userName}" class="chat-widget-avatar">
                     <div class="chat-widget-conversation-info">
-                        <div class="chat-widget-conversation-name">${conv.name}</div>
-                        <div class="chat-widget-conversation-preview">${conv.lastMessage}</div>
+                        <div class="chat-widget-conversation-name">${userName}</div>
+                        <div class="chat-widget-conversation-preview">${conv.lastMessage || 'Start a conversation'}</div>
                     </div>
                     <div class="chat-widget-conversation-meta">
-                        <div class="chat-widget-conversation-time">${conv.time}</div>
-                        ${conv.unread > 0 ? `<div class="chat-widget-conversation-unread">${conv.unread}</div>` : ''}
+                        <div class="chat-widget-conversation-time">${lastMessageTime}</div>
+                        ${unreadCount > 0 ? `<div class="chat-widget-conversation-unread">${unreadCount}</div>` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+        }).join('');
+        
+        content.innerHTML = conversationElements;
+        
+        // Update total unread count
+        const totalUnread = conversations.reduce((sum, conv) => {
+            return sum + (conv.unreadCount?.[this.currentUser.uid] || 0);
+        }, 0);
+        
+        this.updateUnreadCount(totalUnread);
+    }
+    
+    // Format time helper
+    formatTime(date) {
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+        return `${Math.floor(diff / 86400000)}d ago`;
+    }
+    
+    // Setup real-time notifications
+    setupNotifications() {
+        if (!this.currentUser || typeof window.db === 'undefined') return;
+        
+        try {
+            // Get Firebase functions from global scope or imports
+            const { collection, query, where, onSnapshot } = window.firebaseImports || 
+                (typeof window.firebase !== 'undefined' ? window.firebase : {});
+            if (!collection) return;
             
-            // Update total unread count
-            this.updateUnreadCount(conversations.reduce((sum, conv) => sum + conv.unread, 0));
+            // Listen for new messages in user's conversations
+            const conversationsRef = collection(window.db, 'conversations');
+            const q = query(
+                conversationsRef,
+                where('participants', 'array-contains', this.currentUser.uid)
+            );
+            
+            onSnapshot(q, (snapshot) => {
+                let totalUnread = 0;
+                
+                snapshot.forEach((doc) => {
+                    const conversation = doc.data();
+                    const unreadCount = conversation.unreadCount?.[this.currentUser.uid] || 0;
+                    totalUnread += unreadCount;
+                });
+                
+                this.updateUnreadCount(totalUnread);
+                
+                // Show browser notification for new messages
+                if (totalUnread > this.lastUnreadCount && this.lastUnreadCount !== undefined) {
+                    this.showBrowserNotification('New message received!');
+                }
+                
+                this.lastUnreadCount = totalUnread;
+            });
+            
+        } catch (error) {
+            console.error('Error setting up notifications:', error);
+        }
+    }
+    
+    // Show browser notification
+    showBrowserNotification(message) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Shift Chat', {
+                body: message,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico'
+            });
+        } else if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification('Shift Chat', {
+                        body: message,
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico'
+                    });
+                }
+            });
         }
     }
 
