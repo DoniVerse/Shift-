@@ -121,7 +121,7 @@ class ChatButtons {
             name: 'Law Firm Employer',
             email: 'employer@lawfirm.com',
             userType: 'employer',
-            avatar: 'https://via.placeholder.com/40x40/5a3e5d/ffffff?text=E'
+            avatar: this.generateAvatar('Employer', 40)
         };
     }
 
@@ -135,7 +135,7 @@ class ChatButtons {
             name: name,
             email: `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
             userType: window.location.pathname.includes('student') ? 'student' : 'employer',
-            avatar: `https://via.placeholder.com/40x40/d17e7e/ffffff?text=${name.charAt(0)}`
+            avatar: this.generateAvatar(name, 40)
         };
     }
 
@@ -218,6 +218,32 @@ class ChatButtons {
         `;
         
         document.head.appendChild(styles);
+    }
+
+    // Generate avatar using canvas
+    generateAvatar(name, size = 40) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = size;
+        canvas.height = size;
+
+        // Background color based on name
+        const colors = ['#d17e7e', '#5a3e5d', '#8c6c8e', '#4a3249', '#7e9dd1', '#7ed17e'];
+        const colorIndex = name ? name.length % colors.length : 0;
+
+        // Draw background
+        ctx.fillStyle = colors[colorIndex];
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${size * 0.4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const initial = name ? name.charAt(0).toUpperCase() : 'U';
+        ctx.fillText(initial, size / 2, size / 2);
+
+        return canvas.toDataURL();
     }
 }
 

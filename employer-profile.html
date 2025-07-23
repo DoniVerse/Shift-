@@ -120,8 +120,9 @@
             }
             // Update UI
             if (employerInfo) {
+                // Always use 'name' field for company name if present
                 document.getElementById('profile-company-name').textContent =
-                    employerInfo.companyName || employerInfo.name || employerInfo.displayName || 'Company Name';
+                    employerInfo.name || employerInfo.companyName || employerInfo.displayName || 'Company Name';
                 if (employerInfo.logo) {
                     document.getElementById('company-logo').src = employerInfo.logo;
                     document.getElementById('company-logo').style.display = 'block';
@@ -405,6 +406,27 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
     <!-- Chat Widget Integration -->
     <script src="chat-integration-widget.js"></script>
+    <script>
+    // Pin admin account in chat sidebar for employer
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wait for chat widget to load
+      function pinAdminInChat() {
+        if (window.chatWidget && typeof window.chatWidget.pinContact === 'function') {
+          // Replace with your actual admin account info
+          window.chatWidget.pinContact({
+            id: 'admin',
+            name: 'Admin',
+            email: 'admin@shift.com',
+            avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png', // Example avatar
+            role: 'admin'
+          });
+        }
+      }
+      // Try immediately, and also after a short delay in case chatWidget loads late
+      pinAdminInChat();
+      setTimeout(pinAdminInChat, 1000);
+    });
+    </script>
     <script type="module">
       import { renderEmployerApplications } from './employer-applications-view.js';
       // Wait for Firebase Auth to be ready

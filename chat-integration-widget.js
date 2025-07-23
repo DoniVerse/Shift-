@@ -422,8 +422,16 @@ class ChatWidget {
     loadConversations() {
         const content = this.widget.querySelector('.chat-widget-content');
         
-        // Mock conversations data
+        // Always pin admin as the first contact
         const conversations = [
+            {
+                id: 'admin',
+                name: 'Admin',
+                avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                lastMessage: 'How can I help you?',
+                time: 'Online',
+                unread: 0
+            },
             {
                 id: '1',
                 name: 'John Smith',

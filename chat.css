@@ -278,6 +278,66 @@ body {
     color: var(--color-primary);
 }
 
+/* Pinned Admin Contact Styles */
+.pinned-admin {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border: 2px solid var(--color-primary);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(209, 126, 126, 0.15);
+}
+
+.pinned-admin:hover {
+    background: linear-gradient(135deg, #ffecb3 0%, #ffd54f 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(209, 126, 126, 0.25);
+    transition: all 0.2s ease;
+}
+
+.admin-pin-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 12px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.admin-badge {
+    background: var(--color-primary);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+}
+
+.pinned-admin .conversation-name {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.pinned-admin .conversation-preview {
+    color: #8d6e63;
+    font-style: italic;
+}
+
+.pinned-admin .conversation-time {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 11px;
+}
+
 /* Loading States */
 .loading-conversations {
     display: flex;
