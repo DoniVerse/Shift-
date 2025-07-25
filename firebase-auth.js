@@ -363,23 +363,36 @@ class FirebaseAuthManager {
         // Ensure yearOfStudy is properly converted to number
         const yearOfStudy = parseInt(userData.yearOfStudy) || parseInt(userData.year) || 2;
 
+        // Base fields for all users
         const localData = {
             name: userData.fullName || userData.name,
             email: userData.email,
             userType: userData.userType,
-            university: userData.universityName || userData.university,
-            yearOfStudy: yearOfStudy, // Ensure this is a number
-            department: userData.department,
-            linkedinUrl: userData.linkedinUrl,
             firebaseUid: this.currentUser?.uid,
-            // Add timestamp to track when user was stored
             lastUpdated: new Date().toISOString()
         };
 
+        // Student-specific fields
+        if (userData.userType === 'student') {
+            localData.university = userData.universityName || userData.university;
+            localData.yearOfStudy = yearOfStudy;
+            localData.department = userData.department;
+            localData.linkedinUrl = userData.linkedinUrl;
+        }
+
+        // Employer-specific fields
+        if (userData.userType === 'employer') {
+            localData.companyName = userData.name;
+            localData.companyType = userData.companyType;
+            localData.phone = userData.phone;
+            localData.registrationNumber = userData.registrationNumber;
+            localData.logo = userData.logo;
+        }
+
         localStorage.setItem('currentUser', JSON.stringify(localData));
+        localStorage.setItem('employerInfo', JSON.stringify(localData)); // Also update employerInfo for profile page
         localStorage.setItem('userAuthenticated', 'true');
-        console.log('User data stored in localStorage with yearOfStudy:', yearOfStudy);
-        console.log('Full user data:', localData);
+        console.log('User data stored in localStorage:', localData);
     }
 
     // Sync user data

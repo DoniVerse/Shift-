@@ -103,12 +103,14 @@
             window.history.back();
         }
 
-        // Load employer info from Firestore, fallback to localStorage if not found
+        // Load employer info from Firestore (always prefer Firestore, fallback to localStorage only if needed)
         async function loadEmployerInfo(user) {
-            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const { doc, getDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
             let employerInfo = null;
             try {
-                const userDocRef = doc(window.firebaseFirestore, 'users', user.uid);
+                // Use the global firebaseApp if available, else fallback
+                const db = window.firebaseApp ? getFirestore(window.firebaseApp) : getFirestore();
+                const userDocRef = doc(db, 'users', user.uid);
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists()) {
                     employerInfo = userDoc.data();
@@ -118,11 +120,10 @@
             } catch (error) {
                 employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
             }
-            // Update UI
+            // Update UI with all available employer fields
             if (employerInfo) {
-                // Always use 'name' field for company name if present
                 document.getElementById('profile-company-name').textContent =
-                    employerInfo.name || employerInfo.companyName || employerInfo.displayName || 'Company Name';
+                    employerInfo.companyName || employerInfo.name || employerInfo.displayName || 'Company Name';
                 if (employerInfo.logo) {
                     document.getElementById('company-logo').src = employerInfo.logo;
                     document.getElementById('company-logo').style.display = 'block';
@@ -131,6 +132,29 @@
                     document.getElementById('company-logo').style.display = 'none';
                     document.getElementById('default-avatar').style.display = 'block';
                 }
+                // Optionally display more fields (phone, registration number, company type)
+                let infoHtml = '';
+                if (employerInfo.companyType) {
+                    infoHtml += `<div><strong>Type:</strong> ${employerInfo.companyType}</div>`;
+                }
+                if (employerInfo.phone) {
+                    infoHtml += `<div><strong>Phone:</strong> ${employerInfo.phone}</div>`;
+                }
+                if (employerInfo.registrationNumber) {
+                    infoHtml += `<div><strong>Registration #:</strong> ${employerInfo.registrationNumber}</div>`;
+                }
+                if (employerInfo.email) {
+                    infoHtml += `<div><strong>Email:</strong> ${employerInfo.email}</div>`;
+                }
+                // Insert into a new or existing div below the company name
+                let detailsDiv = document.getElementById('profile-company-details');
+                if (!detailsDiv) {
+                    detailsDiv = document.createElement('div');
+                    detailsDiv.id = 'profile-company-details';
+                    detailsDiv.style.marginTop = '10px';
+                    document.querySelector('.profile-section').appendChild(detailsDiv);
+                }
+                detailsDiv.innerHTML = infoHtml;
             }
         }
 
@@ -163,27 +187,46 @@
                 showModal('Company Information', '<div>Please sign in to view your company information.</div>');
                 return;
             }
-            const content = `
-                <div class="info-section">
-                    <div class="info-item">
-                        <strong>Company Name:</strong>
-                        <span>${user.displayName || ''}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Type:</strong>
-                        <span>${user.companyType || ''}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Phone:</strong>
-                        <span>${user.phone || ''}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Email:</strong>
-                        <span>${user.email || ''}</span>
-                    </div>
-                </div>
-            `;
-            showModal('Company Information', content);
+            // Fetch employer info from Firestore
+            (async () => {
+                const { doc, getDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                try {
+                    const db = window.firebaseApp ? getFirestore(window.firebaseApp) : getFirestore();
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    let employerInfo = null;
+                    if (userDoc.exists()) {
+                        employerInfo = userDoc.data();
+                    } else {
+                        employerInfo = JSON.parse(localStorage.getItem('employerInfo'));
+                    }
+                    if (!employerInfo) {
+                        showModal('Company Information', '<div>Company information not found.</div>');
+                        return;
+                    }
+                    let content = `<div class="info-section">`;
+                    content += `<div class="info-item"><strong>Company Name:</strong> <span>${employerInfo.companyName || employerInfo.name || ''}</span></div>`;
+                    if (employerInfo.companyType) {
+                        content += `<div class="info-item"><strong>Type:</strong> <span>${employerInfo.companyType}</span></div>`;
+                    }
+                    if (employerInfo.phone) {
+                        content += `<div class="info-item"><strong>Phone:</strong> <span>${employerInfo.phone}</span></div>`;
+                    }
+                    if (employerInfo.registrationNumber) {
+                        content += `<div class="info-item"><strong>Registration #:</strong> <span>${employerInfo.registrationNumber}</span></div>`;
+                    }
+                    if (employerInfo.email) {
+                        content += `<div class="info-item"><strong>Email:</strong> <span>${employerInfo.email}</span></div>`;
+                    }
+                    if (employerInfo.logo) {
+                        content += `<div class="info-item"><strong>Logo:</strong><br><img src="${employerInfo.logo}" alt="Logo" style="max-width:80px;max-height:80px;border-radius:8px;margin-top:4px;" /></div>`;
+                    }
+                    content += `</div>`;
+                    showModal('Company Information', content);
+                } catch (e) {
+                    showModal('Company Information', '<div>Error loading company information.</div>');
+                }
+            })();
         }
 
         function showJobInfo() {
