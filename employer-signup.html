@@ -92,7 +92,6 @@
         // Logo preview logic
         const logoInput = document.getElementById('employer-logo');
         const logoPreview = document.getElementById('logo-preview');
-        let logoDataUrl = '';
         logoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -100,13 +99,13 @@
                 reader.onload = function(evt) {
                     logoPreview.src = evt.target.result;
                     logoPreview.style.display = 'block';
-                    logoDataUrl = evt.target.result;
+                    window.logoDataUrl = evt.target.result; // Set globally for signup handler
                 };
                 reader.readAsDataURL(file);
             } else {
                 logoPreview.src = '';
                 logoPreview.style.display = 'none';
-                logoDataUrl = '';
+                window.logoDataUrl = '';
             }
         });
 

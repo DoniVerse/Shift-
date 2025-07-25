@@ -138,6 +138,16 @@ class FirebaseAuthManager {
         e.preventDefault();
 
         // Get values directly from form elements
+        const logoDataUrl = window.logoDataUrl || '';
+        // Debug: log the logo data URL
+        console.log('Employer logoDataUrl:', logoDataUrl);
+
+        // If logo is required, prevent submission if missing
+        if (!logoDataUrl) {
+            alert('Please upload your company logo before signing up.');
+            return;
+        }
+
         const userData = {
             name: document.getElementById('employer-name')?.value,
             email: document.getElementById('employer-email')?.value,
@@ -145,7 +155,7 @@ class FirebaseAuthManager {
             phone: document.getElementById('employer-phone')?.value,
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
-            logo: window.logoDataUrl || '', // Use the previewed logo data URL if available
+            logo: logoDataUrl,
             userType: 'employer'
         };
 

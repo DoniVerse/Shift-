@@ -26,7 +26,7 @@
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                 </svg>
             </div>
-            <h1 class="company-name" id="profile-company-name">Company Name</h1>
+            <h1 class="company-name" id="profile-company-name"></h1>
             <!-- Logout button -->
             <button id="logout-btn" style="margin-top: 24px; width: 100%; padding: 10px 0; background: #dc2626; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Logout</button>
         </div>
@@ -122,15 +122,50 @@
             }
             // Update UI with all available employer fields
             if (employerInfo) {
-                document.getElementById('profile-company-name').textContent =
-                    employerInfo.companyName || employerInfo.name || employerInfo.displayName || 'Company Name';
-                if (employerInfo.logo) {
-                    document.getElementById('company-logo').src = employerInfo.logo;
-                    document.getElementById('company-logo').style.display = 'block';
-                    document.getElementById('default-avatar').style.display = 'none';
+                // Debug: log employerInfo to help diagnose missing fields
+                console.log('Loaded employerInfo:', employerInfo);
+                // Use the actual company name from signup, fallback to any available name
+                let companyName = employerInfo.companyName || employerInfo.name || employerInfo.displayName || employerInfo.fullName || 'Company Name';
+                // Always show the company name below the logo/avatar
+                let nameElem = document.getElementById('profile-company-name');
+                let logoElem = document.getElementById('company-logo');
+                let avatarElem = document.getElementById('default-avatar');
+                // If any of these elements are missing, create them and insert into .profile-section
+                const profileSection = document.querySelector('.profile-section');
+                if (!logoElem) {
+                    logoElem = document.createElement('img');
+                    logoElem.id = 'company-logo';
+                    logoElem.alt = 'Company Logo';
+                    logoElem.style = 'display:none;max-width:80px;max-height:80px;border-radius:8px;';
+                    if (profileSection) profileSection.insertBefore(logoElem, profileSection.firstChild);
+                    else console.warn('profile-section not found');
+                }
+                if (!avatarElem) {
+                    avatarElem = document.createElement('svg');
+                    avatarElem.id = 'default-avatar';
+                    avatarElem.setAttribute('width', '60');
+                    avatarElem.setAttribute('height', '60');
+                    avatarElem.setAttribute('viewBox', '0 0 24 24');
+                    avatarElem.setAttribute('fill', 'none');
+                    avatarElem.innerHTML = '<path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>';
+                    if (profileSection) profileSection.insertBefore(avatarElem, logoElem.nextSibling);
+                }
+                if (!nameElem) {
+                    nameElem = document.createElement('h1');
+                    nameElem.className = 'company-name';
+                    nameElem.id = 'profile-company-name';
+                    if (profileSection) profileSection.appendChild(nameElem);
+                }
+                nameElem.textContent = companyName;
+                // Show logo if available, fallback to default avatar
+                const logoUrl = employerInfo.logo || employerInfo.profilePicture || '';
+                if (logoUrl) {
+                    logoElem.src = logoUrl;
+                    logoElem.style.display = 'block';
+                    avatarElem.style.display = 'none';
                 } else {
-                    document.getElementById('company-logo').style.display = 'none';
-                    document.getElementById('default-avatar').style.display = 'block';
+                    logoElem.style.display = 'none';
+                    avatarElem.style.display = 'block';
                 }
                 // Optionally display more fields (phone, registration number, company type)
                 let infoHtml = '';
@@ -152,7 +187,7 @@
                     detailsDiv = document.createElement('div');
                     detailsDiv.id = 'profile-company-details';
                     detailsDiv.style.marginTop = '10px';
-                    document.querySelector('.profile-section').appendChild(detailsDiv);
+                    if (profileSection) profileSection.appendChild(detailsDiv);
                 }
                 detailsDiv.innerHTML = infoHtml;
             }
@@ -497,5 +532,58 @@ document.addEventListener('DOMContentLoaded', function() {
     <script type="module" src="firebase-auth.js"></script>
     <script type="module" src="firebase-jobs.js"></script>
     <!-- <script type="module" src="employer-applications.js"></script> -->
+    <script type="module">
+      // Ensure company logo and name are always loaded from Firestore
+      document.addEventListener('DOMContentLoaded', async () => {
+        const logoImg = document.getElementById('company-logo');
+        const defaultAvatar = document.getElementById('default-avatar');
+        const nameElem = document.getElementById('profile-company-name');
+        if (!window.firebaseAuth) {
+          console.error('firebaseAuth not found');
+          if (nameElem) nameElem.textContent = 'Unable to load profile.';
+          return;
+        }
+        window.firebaseAuth.onAuthStateChange(async (user) => {
+          if (!user) {
+            if (nameElem) nameElem.textContent = 'Please sign in as an employer.';
+            if (logoImg) logoImg.style.display = 'none';
+            if (defaultAvatar) defaultAvatar.style.display = '';
+            return;
+          }
+          try {
+            const db = window.firebaseFirestore || window.firebaseAuth.db || window.firebaseAuth.firestore || null;
+            if (!db) {
+              if (nameElem) nameElem.textContent = 'Firestore not available.';
+              return;
+            }
+            const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (!userDoc.exists()) {
+              if (nameElem) nameElem.textContent = 'Employer profile not found.';
+              if (logoImg) logoImg.style.display = 'none';
+              if (defaultAvatar) defaultAvatar.style.display = '';
+              return;
+            }
+            const data = userDoc.data();
+            // Set company name
+            if (nameElem) nameElem.textContent = data.companyName || data.name || 'Company Name';
+            // Set logo
+            if (data.logo && logoImg) {
+              logoImg.src = data.logo;
+              logoImg.style.display = '';
+              if (defaultAvatar) defaultAvatar.style.display = 'none';
+            } else {
+              if (logoImg) logoImg.style.display = 'none';
+              if (defaultAvatar) defaultAvatar.style.display = '';
+            }
+          } catch (err) {
+            console.error('Error loading employer profile:', err);
+            if (nameElem) nameElem.textContent = 'Error loading profile.';
+            if (logoImg) logoImg.style.display = 'none';
+            if (defaultAvatar) defaultAvatar.style.display = '';
+          }
+        });
+      });
+    </script>
   </body>
 </html>
