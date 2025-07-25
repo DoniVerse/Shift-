@@ -285,7 +285,7 @@ body {
 /* DEBUG: Force pinned-admin to be visible and on top */
 .pinned-admin {
     background: var(--color-bg-light);
-    border: 2px solid var(--color-primary);
+    border: none !important;
     border-radius: 12px;
     margin-bottom: 8px;
     position: relative;
