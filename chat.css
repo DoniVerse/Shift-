@@ -183,11 +183,14 @@ body {
 /* Conversations Container */
 .conversations-container {
     flex: 1;
-    overflow-y: auto;
+    overflow: visible !important;
+    min-height: 600px !important;
 }
 
 .conversations-list {
     padding: 0;
+    overflow: visible !important;
+    min-height: 600px !important;
 }
 
 .conversation-item {
@@ -279,13 +282,20 @@ body {
 }
 
 /* Pinned Admin Contact Styles */
+/* DEBUG: Force pinned-admin to be visible and on top */
 .pinned-admin {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    background: var(--color-bg-light);
     border: 2px solid var(--color-primary);
     border-radius: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     position: relative;
-    box-shadow: 0 2px 8px rgba(209, 126, 126, 0.15);
+    box-shadow: none;
+    z-index: 1;
+    display: flex;
+    opacity: 1;
+    min-height: unset;
+    font-size: unset;
+    color: unset;
 }
 
 .pinned-admin:hover {

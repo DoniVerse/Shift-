@@ -344,11 +344,15 @@ class ChatApp {
                 console.log('📨 Conversations snapshot received, size:', snapshot.size);
 
                 this.conversations.clear();
+                console.warn('[DEBUG] conversationsList.innerHTML cleared by onSnapshot (conversations)');
                 this.conversationsList.innerHTML = '';
+                // Add a persistent debug message to the DOM
+                const debugMsg = document.createElement('div');
+                // (Removed debug DOM message and clearing sidebar here)
 
                 if (snapshot.empty) {
                     console.log('📭 No conversations found');
-                    this.showEmptyConversations();
+                    this.refreshConversationsDisplay();
                     return;
                 }
 
@@ -367,11 +371,8 @@ class ChatApp {
                     return bTime - aTime;
                 });
 
-                // Render sorted conversations
-                conversationsArray.forEach(conversation => {
-                    this.renderConversationItem(conversation);
-                });
-
+                // After updating conversations, refresh the sidebar (admin will be pinned)
+                this.refreshConversationsDisplay();
                 console.log(`✅ Loaded ${conversationsArray.length} conversations successfully`);
             }, (error) => {
                 console.error('❌ Error in conversations listener:', error);
@@ -451,110 +452,7 @@ class ChatApp {
         }
     }
 
-    // Render pinned admin contact at top of conversations
-    renderPinnedAdmin() {
-        console.log('🔄 Rendering pinned admin contact');
-        console.log('Available users:', this.users.size);
-        
-        // Debug: Log all users
-        for (const [userId, user] of this.users) {
-            console.log('User:', userId, user.email, user.userType, user.role);
-        }
-        
-        // Find admin user with multiple criteria
-        let adminUser = null;
-        for (const [userId, user] of this.users) {
-            const isAdmin = user.email && (
-                user.email.toLowerCase().includes('admin') ||
-                user.userType === 'admin' ||
-                user.role === 'admin' ||
-                user.email.toLowerCase().includes('support')
-            );
-            
-            if (isAdmin) {
-                adminUser = { id: userId, ...user };
-                console.log('✅ Found admin user:', user.email, 'Type:', user.userType);
-                break;
-            }
-        }
-        
-        if (!adminUser) {
-            console.log('❌ Admin user not found. Creating placeholder admin.');
-            // Create a placeholder admin for demonstration
-            adminUser = {
-                id: 'admin-placeholder',
-                name: 'Admin Support',
-                email: 'admin@shift.com',
-                userType: 'admin',
-                isOnline: true
-            };
-        }
-        
-        console.log('✅ Found admin user:', adminUser.email);
-        console.log('Admin user object:', adminUser);
-        
-        // Create pinned admin element
-        const adminElement = document.createElement('div');
-        adminElement.className = 'conversation-item pinned-admin';
-        adminElement.dataset.userId = adminUser.id;
-        
-        // Add inline styles to ensure visibility
-        adminElement.style.display = 'flex';
-        adminElement.style.minHeight = '70px';
-        adminElement.style.backgroundColor = '#fff3e0';
-        adminElement.style.border = '2px solid #d17e7e';
-        adminElement.style.borderRadius = '12px';
-        adminElement.style.marginBottom = '12px';
-        adminElement.style.padding = '15px 20px';
-        
-        const adminAvatar = adminUser.profilePicture || this.generateAvatar(adminUser.name || 'Admin', 50);
-        const isOnline = adminUser.isOnline || false;
-        
-        adminElement.innerHTML = `
-            <div class="conversation-avatar">
-                <img src="${adminAvatar}" alt="Admin">
-                ${isOnline ? '<div class="online-indicator"></div>' : ''}
-                <div class="admin-pin-badge">📌</div>
-            </div>
-            <div class="conversation-info">
-                <div class="conversation-name">${adminUser.name || 'Admin'} <span class="admin-badge">ADMIN</span></div>
-                <div class="conversation-preview">Contact admin for support</div>
-            </div>
-            <div class="conversation-meta">
-                <div class="conversation-time">Pinned</div>
-            </div>
-        `;
-        
-        adminElement.addEventListener('click', async () => {
-            console.log('Admin contact clicked:', adminUser.id);
-            await this.startConversationWithUser(adminUser.id);
-        });
-        
-        // Debug: Check if conversationsList exists
-        console.log('Conversations list element:', this.conversationsList);
-        console.log('Conversations list innerHTML before:', this.conversationsList.innerHTML);
-        
-        // Try prepending instead of appending to ensure it's at the top
-        if (this.conversationsList.firstChild) {
-            this.conversationsList.insertBefore(adminElement, this.conversationsList.firstChild);
-        } else {
-            this.conversationsList.appendChild(adminElement);
-        }
-        
-        // Debug: Check after appending
-        console.log('Conversations list innerHTML after:', this.conversationsList.innerHTML);
-        console.log('Admin element:', adminElement);
-        console.log('Admin element style:', window.getComputedStyle(adminElement));
-        console.log('✅ Pinned admin contact rendered');
-        console.log('Element dimensions:', adminElement.offsetWidth, 'x', adminElement.offsetHeight);
-        console.log('Element position:', adminElement.offsetTop, adminElement.offsetLeft);
-        
-        // Force a visual test
-        setTimeout(() => {
-            console.log('Admin element still in DOM?', document.contains(adminElement));
-            console.log('Admin element visible?', adminElement.offsetHeight > 0);
-        }, 1000);
-    }
+    // ...existing code...
 
     // Refresh conversations display with updated user data
     refreshConversationsDisplay() {
@@ -565,7 +463,9 @@ class ChatApp {
 
         // Pin admin user at the top of the sidebar
         let adminUser = null;
+        console.log('Checking users for admin pinning:');
         for (const [userId, user] of this.users) {
+            console.log('User:', userId, user.email, user.userType, user.role);
             const isAdmin = user.email && (
                 user.email.toLowerCase().includes('admin') ||
                 user.userType === 'admin' ||
@@ -573,11 +473,13 @@ class ChatApp {
                 user.email.toLowerCase().includes('support')
             );
             if (isAdmin) {
+                console.log('Admin user found:', userId, user.email);
                 adminUser = { id: userId, ...user };
                 break;
             }
         }
         if (!adminUser) {
+            console.warn('No admin user found, using placeholder.');
             adminUser = {
                 id: 'admin-placeholder',
                 name: 'Admin Support',
@@ -585,6 +487,8 @@ class ChatApp {
                 userType: 'admin',
                 isOnline: true
             };
+        } else {
+            console.log('Admin user to pin:', adminUser);
         }
         // Always use a unique conversation id for admin
         const adminConversationId = [this.currentUser.uid, adminUser.id].sort().join('_');
@@ -594,10 +498,13 @@ class ChatApp {
         adminElement.style.display = 'flex';
         adminElement.style.minHeight = '70px';
         adminElement.style.backgroundColor = '#fff3e0';
-        adminElement.style.border = '2px solid #d17e7e';
+        adminElement.style.border = '4px solid #ff0000'; // Debug: make border red and thick
         adminElement.style.borderRadius = '12px';
         adminElement.style.marginBottom = '12px';
         adminElement.style.padding = '15px 20px';
+        adminElement.style.zIndex = '1000';
+        adminElement.style.position = 'relative';
+        adminElement.style.boxShadow = '0 0 10px #ff0000'; // Debug: add shadow
         const adminAvatar = adminUser.profilePicture || this.generateAvatar(adminUser.name || 'Admin', 50);
         const isOnline = adminUser.isOnline || false;
         adminElement.innerHTML = `
@@ -618,6 +525,7 @@ class ChatApp {
             await this.startConversationWithUser(adminUser.id);
         });
         this.conversationsList.appendChild(adminElement);
+        console.log('Admin element appended to conversationsList:', adminElement, 'Parent:', this.conversationsList);
 
         // Convert conversations map to array and sort
         const conversationsArray = Array.from(this.conversations.values());
@@ -627,8 +535,15 @@ class ChatApp {
             return bTime - aTime;
         });
 
-        // Re-render each conversation with updated user data
+        // Re-render each conversation with updated user data, skipping admin conversation
         conversationsArray.forEach(conversation => {
+            // Find the other participant in this conversation
+            const otherParticipantId = conversation.participants.find(id => id !== this.currentUser.uid);
+            // If this conversation is with the admin user, skip it (already pinned)
+            if (otherParticipantId === adminUser.id) {
+                console.log('Skipping admin conversation in list:', conversation.id);
+                return;
+            }
             this.renderConversationItem(conversation);
         });
 
