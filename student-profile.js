@@ -22,16 +22,43 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Load user profile data
-    function loadProfile() {
-        const userData = getUserData();
+    // Load user profile data from Firestore
+    async function loadProfile() {
+        const auth = window.firebaseAuth;
+        const db = window.firebaseFirestore;
+        const user = auth?.currentUser;
+        
+        let userData = getUserData();
+        
+        // Try to load from Firestore first
+        if (user && db) {
+            try {
+                const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const firestoreData = userDoc.data();
+                    // Merge Firestore data with localStorage data
+                    userData = {
+                        ...userData,
+                        name: firestoreData.name || userData.name,
+                        profilePicture: firestoreData.profilePicture
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading profile from Firestore:', error);
+            }
+        }
+        
         document.getElementById('profileName').textContent = userData.name;
         
-        // Load profile picture if available
-        const savedProfilePic = localStorage.getItem('profilePicture');
-        if (savedProfilePic) {
+        // Load profile picture - check Firestore first, then localStorage
+        const profilePictureUrl = userData.profilePicture || localStorage.getItem('profilePicture');
+        
+        if (profilePictureUrl) {
             const img = document.createElement('img');
-            img.src = savedProfilePic;
+            img.src = profilePictureUrl;
             profilePicture.innerHTML = '';
             profilePicture.appendChild(img);
         }
@@ -42,11 +69,11 @@ document.addEventListener('DOMContentLoaded', function() {
         profilePictureInput.click();
     });
 
-    profilePictureInput.addEventListener('change', function(e) {
+    profilePictureInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 profilePicture.innerHTML = '';
@@ -54,12 +81,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Save to localStorage
                 localStorage.setItem('profilePicture', e.target.result);
+                
+                // Save to Firestore
+                const auth = window.firebaseAuth;
+                const db = window.firebaseFirestore;
+                const user = auth?.currentUser;
+                
+                if (user && db) {
+                    try {
+                        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                        const userDocRef = doc(db, 'users', user.uid);
+                        await updateDoc(userDocRef, {
+                            profilePicture: e.target.result,
+                            updatedAt: new Date()
+                        });
+                        console.log('Profile picture saved to Firestore');
+                    } catch (error) {
+                        console.error('Error saving profile picture to Firestore:', error);
+                    }
+                }
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Modal content templates
+    // Load data from Firestore or localStorage
+    async function loadSectionData(section) {
+        const auth = window.firebaseAuth;
+        const db = window.firebaseFirestore;
+        const user = auth?.currentUser;
+        
+        if (user && db) {
+            try {
+                const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    return userData[section + 'Data'] || {};
+                }
+            } catch (error) {
+                console.error('Error loading from Firestore:', error);
+            }
+        }
+        
+        // Fallback to localStorage
+        return JSON.parse(localStorage.getItem(section + 'Data') || '{}');
+    }
+
+    // Update modal content functions
     const modalContent = {
         personal: function() {
             const userData = getUserData();
@@ -94,8 +165,8 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         },
         
-        resume: function() {
-            const resumeData = JSON.parse(localStorage.getItem('resumeData') || '{}');
+        resume: async function() {
+            const resumeData = await loadSectionData('resume');
             return `
                 <form id="resumeForm">
                     <div class="form-group">
@@ -112,30 +183,30 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         },
         
-        skills: function() {
-            const skillsData = JSON.parse(localStorage.getItem('skillsData') || '{"skills": [], "experience": []}');
+        skills: async function() {
+            const skillsData = await loadSectionData('skills');
             return `
                 <form id="skillsForm">
                     <div class="form-group">
                         <label for="skills">Skills (comma-separated)</label>
-                        <textarea id="skills" placeholder="e.g., Legal Research, Contract Analysis, Legal Writing...">${skillsData.skills.join(', ')}</textarea>
+                        <textarea id="skills" placeholder="e.g., Legal Research, Contract Analysis, Legal Writing...">${(skillsData.skills || []).join(', ')}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="experience">Work Experience</label>
-                        <textarea id="experience" placeholder="Describe your relevant work experience...">${skillsData.experience.join('\n\n')}</textarea>
+                        <textarea id="experience" placeholder="Describe your relevant work experience...">${(skillsData.experience || []).join('\n\n')}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="certifications">Certifications</label>
-                        <textarea id="certifications" placeholder="List any relevant certifications...">${skillsData.certifications || ''}</textarea>
+                        <textarea id="certifications" placeholder="List your certifications...">${skillsData.certifications || ''}</textarea>
                     </div>
                     <button type="submit" class="btn-primary">Save Skills & Experience</button>
                 </form>
             `;
         },
         
-        education: function() {
+        education: async function() {
             const userData = getUserData();
-            const educationData = JSON.parse(localStorage.getItem('educationData') || '{}');
+            const educationData = await loadSectionData('education');
             return `
                 <form id="educationForm">
                     <div class="info-item">
@@ -184,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle menu item clicks
     document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', async function() {
             const section = this.dataset.section;
             const titles = {
                 personal: 'Personal Information',
@@ -195,7 +266,15 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             modalTitle.textContent = titles[section];
-            modalBody.innerHTML = modalContent[section]();
+            
+            // Handle async modal content
+            if (typeof modalContent[section] === 'function') {
+                const content = await modalContent[section]();
+                modalBody.innerHTML = content;
+            } else {
+                modalBody.innerHTML = modalContent[section];
+            }
+            
             modal.style.display = 'block';
             
             // Setup form handlers
@@ -274,26 +353,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Save form data to localStorage
-    function saveFormData(section, form) {
+    // Save form data to Firestore and localStorage
+    async function saveFormData(section, form) {
         const userData = JSON.parse(localStorage.getItem('currentUser')) || {};
         if (userData.userType !== 'student') {
             alert('Only authenticated students can edit this information.');
             return;
         }
+
+        const auth = window.firebaseAuth;
+        const db = window.firebaseFirestore;
+        const user = auth?.currentUser;
+
+        if (!user || !db) {
+            alert('Please sign in to save your information.');
+            return;
+        }
+
         const formData = new FormData(form);
         let data = {};
         let error = '';
+
         switch(section) {
             case 'resume':
                 const summary = document.getElementById('resumeSummary').value.trim();
                 const fileInput = document.getElementById('resumeFile');
                 const fileName = fileInput.files[0]?.name || JSON.parse(localStorage.getItem('resumeData') || '{}').fileName;
-                if (!summary || !fileName) {
-                    error = 'All fields are required (including uploading your resume/CV).';
+                if (!summary) {
+                    error = 'Professional summary is required.';
                 } else {
-                    data = { summary, fileName };
-                    localStorage.setItem('resumeData', JSON.stringify(data));
+                    data = { summary, fileName: fileName || 'No file uploaded' };
                 }
                 break;
             case 'skills':
@@ -308,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         experience: experience.split('\n\n').filter(s => s.trim()),
                         certifications
                     };
-                    localStorage.setItem('skillsData', JSON.stringify(data));
                 }
                 break;
             case 'education':
@@ -320,10 +408,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     error = 'All fields are required.';
                 } else {
                     data = { gpa, graduationDate, relevantCourses, achievements };
-                    localStorage.setItem('educationData', JSON.stringify(data));
                 }
                 break;
         }
+
         if (error) {
             const errorDiv = document.createElement('div');
             errorDiv.style.color = '#dc2626';
@@ -332,8 +420,42 @@ document.addEventListener('DOMContentLoaded', function() {
             form.appendChild(errorDiv);
             return;
         }
-        alert('Information saved successfully!');
-        document.getElementById('sectionModal').style.display = 'none';
+
+        try {
+            // Save to Firestore
+            const { doc, updateDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const userDocRef = doc(db, 'users', user.uid);
+            
+            // Update the specific section in the user document
+            const updateData = {};
+            updateData[section + 'Data'] = data;
+            updateData.updatedAt = new Date();
+            
+            await updateDoc(userDocRef, updateData);
+            
+            // Also save to localStorage for backward compatibility
+            localStorage.setItem(section + 'Data', JSON.stringify(data));
+            
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.style.color = '#22c55e';
+            successDiv.style.marginTop = '10px';
+            successDiv.textContent = 'Information saved successfully!';
+            form.appendChild(successDiv);
+            
+            // Remove success message after 3 seconds
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.parentNode.removeChild(successDiv);
+                }
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Error saving to Firestore:', error);
+            // Fallback to localStorage
+            localStorage.setItem(section + 'Data', JSON.stringify(data));
+            alert('Information saved locally. Please check your internet connection.');
+        }
     }
 
     // Close modal handlers
@@ -391,7 +513,7 @@ function deleteAccount() {
     }
 }
 
-function editPersonalInfo() {
+window.editPersonalInfo = function() {
     const userData = JSON.parse(localStorage.getItem('currentUser')) || {};
     const modalBody = document.getElementById('modalBody');
     const modal = document.getElementById('sectionModal');
@@ -421,37 +543,68 @@ function editPersonalInfo() {
                 <label for="editLinkedIn">LinkedIn</label>
                 <input type="url" id="editLinkedIn" value="${userData.linkedinUrl || ''}" required>
             </div>
-            <button type="submit" class="btn-primary">Save</button>
+            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="button" class="btn-secondary" onclick="location.reload()" style="margin-left: 10px;">Cancel</button>
         </form>
         <div id="personalInfoError" style="color:#dc2626;margin-top:10px;"></div>
     `;
     modal.style.display = 'block';
-    document.getElementById('personalInfoForm').addEventListener('submit', function(e) {
+    
+    document.getElementById('personalInfoForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        // Validation
+        
         const name = document.getElementById('editName').value.trim();
         const email = document.getElementById('editEmail').value.trim();
         const university = document.getElementById('editUniversity').value.trim();
         const department = document.getElementById('editDepartment').value.trim();
         const year = document.getElementById('editYear').value.trim();
         const linkedin = document.getElementById('editLinkedIn').value.trim();
+        
         if (!name || !email || !university || !department || !year || !linkedin) {
             document.getElementById('personalInfoError').textContent = 'All fields are required.';
             return;
         }
-        // Save
+        
         const updatedUser = {
             ...userData,
             name,
             email,
             university,
             department,
-            yearOfStudy: year,
+            yearOfStudy: parseInt(year),
             linkedinUrl: linkedin
         };
+        
+        // Save to localStorage
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        
+        // Save to Firestore
+        const auth = window.firebaseAuth;
+        const db = window.firebaseFirestore;
+        const user = auth?.currentUser;
+        
+        if (user && db) {
+            try {
+                const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                const userDocRef = doc(db, 'users', user.uid);
+                await updateDoc(userDocRef, {
+                    name,
+                    email,
+                    university,
+                    department,
+                    yearOfStudy: parseInt(year),
+                    linkedinUrl: linkedin,
+                    updatedAt: new Date()
+                });
+                console.log('Personal info saved to Firestore');
+            } catch (error) {
+                console.error('Error saving personal info to Firestore:', error);
+            }
+        }
+        
         document.getElementById('profileName').textContent = name;
         document.getElementById('sectionModal').style.display = 'none';
         alert('Personal information updated successfully!');
+        location.reload(); // Refresh to show updated data
     });
-}
+};

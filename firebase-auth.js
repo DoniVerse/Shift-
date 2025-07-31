@@ -109,6 +109,13 @@ class FirebaseAuthManager {
     async handleStudentSignup(e) {
         e.preventDefault();
 
+        // Check terms agreement
+        const termsCheckbox = document.getElementById('terms-agreement');
+        if (!termsCheckbox || !termsCheckbox.checked) {
+            alert('You must read and agree to the Ethical Code of Conduct before signing up.');
+            return;
+        }
+
         const formData = new FormData(e.target);
         const userData = {
             fullName: formData.get('fullName'),
@@ -118,9 +125,9 @@ class FirebaseAuthManager {
             yearOfStudy: parseInt(formData.get('yearOfStudy')),
             department: formData.get('department'),
             linkedinUrl: formData.get('linkedinUrl'),
-            userType: 'student'
-            // Note: File uploads (studentId, profilePicture) are excluded from Firestore
-            // In a real app, these would be uploaded to Firebase Storage separately
+            userType: 'student',
+            termsAccepted: true,
+            termsAcceptedAt: new Date().toISOString()
         };
 
         console.log('Student signup data:', userData);
@@ -137,12 +144,16 @@ class FirebaseAuthManager {
     async handleEmployerSignup(e) {
         e.preventDefault();
 
-        // Get values directly from form elements
+        // Check terms agreement
+        const termsCheckbox = document.getElementById('terms-agreement');
+        if (!termsCheckbox || !termsCheckbox.checked) {
+            alert('You must read and agree to the Ethical Code of Conduct before signing up.');
+            return;
+        }
+
         const logoDataUrl = window.logoDataUrl || '';
-        // Debug: log the logo data URL
         console.log('Employer logoDataUrl:', logoDataUrl);
 
-        // If logo is required, prevent submission if missing
         if (!logoDataUrl) {
             alert('Please upload your company logo before signing up.');
             return;
@@ -156,7 +167,9 @@ class FirebaseAuthManager {
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
             logo: logoDataUrl,
-            userType: 'employer'
+            userType: 'employer',
+            termsAccepted: true,
+            termsAcceptedAt: new Date().toISOString()
         };
 
         console.log('Employer signup data:', userData);
