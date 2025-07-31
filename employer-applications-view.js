@@ -126,67 +126,60 @@ export async function renderEmployerApplications(targetElement, employerId, opti
 window.handleApplicationAction = async function(appId, action, studentId) {
   const db = window.firebaseFirestore;
   if (!confirm(`Are you sure you want to ${action} this application?`)) return;
+  
   try {
-    const { doc, updateDoc, addDoc, serverTimestamp, getDoc, collection, query, where, getDocs } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+    const { doc, updateDoc, addDoc, serverTimestamp, getDoc, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
     const appDocRef = doc(db, 'applications', appId);
-    // If accepting, also set acceptedAt timestamp
+    
+    // Get application details first
+    const appDoc = await getDoc(appDocRef);
+    const appData = appDoc.data();
+    
+    // Update application status
     if (action === 'accepted') {
-      await updateDoc(appDocRef, { status: action, acceptedAt: serverTimestamp() });
+      await updateDoc(appDocRef, { 
+        status: action, 
+        acceptedAt: serverTimestamp(),
+        requiresAgreements: true 
+      });
+      
+      // Send notification to student with agreement requirement
+      const studentNotifRef = collection(db, 'users', studentId, 'notifications');
+      await addDoc(studentNotifRef, {
+        type: 'application_accepted',
+        applicationId: appId,
+        jobTitle: appData.jobTitle,
+        employerName: appData.employerName,
+        message: `You have been accepted for the job '${appData.jobTitle}'. Contact your employer (${appData.employerName}) to receive the file. You have 30 minutes to start and ${appData.duration || '1 hour(s)'} to finish and submit the work through chat.`,
+        status: 'accepted',
+        timestamp: serverTimestamp(),
+        requiresAgreement: true,
+        studentAgreementSigned: false
+      });
+      
     } else {
       await updateDoc(appDocRef, { status: action });
+      
+      // Send rejection notification
+      const studentNotifRef = collection(db, 'users', studentId, 'notifications');
+      await addDoc(studentNotifRef, {
+        type: 'application_rejected',
+        applicationId: appId,
+        jobTitle: appData.jobTitle,
+        employerName: appData.employerName,
+        message: `Your application for '${appData.jobTitle}' has been rejected.`,
+        status: 'rejected',
+        timestamp: serverTimestamp()
+      });
     }
-    // Fetch application data for notification
-    const appSnap = await getDoc(appDocRef);
-    const app = appSnap.data();
-    console.log('[Employer Notif] Application data:', app);
-    // Compose notification
-    let message = '';
-    if (action === 'accepted') {
-      message = `You have been accepted for the job '${app.jobTitle}'. Contact your employer (${app.employerName || ''}) to receive the file. You have 30 minutes to start and ${app.expectedHours || 1} hour(s) to finish and submit the work through chat.`;
-    } else if (action === 'rejected') {
-      message = `You have been rejected for the job '${app.jobTitle}'.`;
+    
+    alert(`Application ${action}!`);
+    // Reload applications
+    const user = window.firebaseAuth && window.firebaseAuth.currentUser;
+    if (user) {
+      loadEmployerApplications(user.uid);
     }
-    // Fallback: look up student UID by email if studentId is missing
-    let finalStudentId = studentId;
-    if (!finalStudentId) {
-      const email = app.studentEmail || app.email || '';
-      console.log('[Employer Notif] No studentId, looking up by email:', email);
-      if (email) {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('email', '==', email));
-        const userSnap = await getDocs(q);
-        console.log('[Employer Notif] User lookup result:', userSnap.docs.map(d => ({id: d.id, ...d.data()})));
-        if (!userSnap.empty) {
-          finalStudentId = userSnap.docs[0].id;
-        }
-      }
-    }
-    // Debug log
-    console.log('[Employer Notif] Adding notification for studentId:', finalStudentId, 'Message:', message);
-    if (finalStudentId) {
-      const notifRef = collection(db, 'users', finalStudentId, 'notifications');
-      try {
-        await addDoc(notifRef, {
-          type: 'application',
-          status: action,
-          jobTitle: app.jobTitle || '',
-          employerName: app.employerName || '',
-          employerEmail: app.employerEmail || '',
-          message,
-          timestamp: serverTimestamp(),
-          applicationId: appId
-        });
-        console.log('[Employer Notif] Notification added!', notifRef.path);
-      } catch (notifErr) {
-        console.error('[Employer Notif] Error adding notification:', notifErr);
-      }
-    } else {
-      console.warn('[Employer Notif] No studentId provided and could not look up by email, notification not added.');
-    }
-    alert(`Application ${action}! Notification sent to student.`);
-    location.reload();
   } catch (err) {
     alert('Error updating application: ' + err.message);
-    console.error('[Employer Notif] Error in handleApplicationAction:', err);
   }
 }; 

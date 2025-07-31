@@ -88,6 +88,7 @@
     <script type="module" src="firebase-jobs.js"></script>
     <script type="module">
     import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    
     window.loadStudentNotifications = function() {
       const db = window.firebaseFirestore;
       const list = document.getElementById('studentNotificationsList');
@@ -102,25 +103,56 @@
           }
           try {
             console.log('[Student Notif] Current user UID:', user.uid);
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
             const notifRef = collection(db, 'users', user.uid, 'notifications');
-            const snapshot = await getDocs(notifRef);
+            const q = query(notifRef, orderBy('timestamp', 'desc'));
+            const snapshot = await getDocs(q);
             console.log('[Student Notif] Notification docs:', snapshot.docs.map(d => d.data()));
+            
             if (snapshot.empty) {
               list.innerHTML = 'No notifications yet.';
               console.log('[Student Notif] No notifications found for user:', user.uid);
               return;
             }
+            
             let html = '';
             snapshot.forEach(doc => {
               const notif = doc.data();
-              html += `
-                <div style="border:1px solid #d1d5db; background:#f9fafb; padding:1em; margin-bottom:1em; border-radius:8px;">
-                  <div><strong>Status:</strong> <span style="color:${notif.status === 'accepted' ? '#22c55e' : notif.status === 'rejected' ? '#dc2626' : '#64748b'}">${notif.status}</span></div>
-                  <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
-                  <div><strong>Message:</strong> ${notif.message || ''}</div>
-                  <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
-                </div>
-              `;
+              const notifId = doc.id;
+              
+              if (notif.status === 'accepted' && notif.requiresAgreement) {
+                html += `
+                    <div style="border:2px solid #22c55e; background:#d4edda; padding:15px; margin-bottom:15px; border-radius:8px;">
+                        <div><strong>Status:</strong> <span style="color:#22c55e; font-weight:bold;">ACCEPTED</span></div>
+                        <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
+                        <div><strong>Message:</strong> ${notif.message || ''}</div>
+                        <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
+                        
+                        ${!notif.studentAgreementSigned ? `
+                            <div style="margin-top:15px; padding-top:15px; border-top:2px solid #c3e6cb;">
+                                <p style="margin:5px 0; color:#155724; font-weight:bold; font-size:16px;">📋 Action Required: Please sign the student agreement to proceed</p>
+                                <button onclick="showStudentAgreement('${notif.applicationId}', '${notif.jobTitle}', '${notif.employerName}', '${notifId}')" 
+                                        style="background:#28a745;color:#fff;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-weight:bold;width:100%;font-size:16px;margin-top:10px;">
+                                    📝 Sign Student Agreement
+                                </button>
+                            </div>
+                        ` : `
+                            <div style="margin-top:10px; color:#155724; font-weight:bold; background:#c3e6cb; padding:10px; border-radius:6px;">
+                                ✅ Student Agreement Signed - Waiting for employer agreement
+                            </div>
+                        `}
+                    </div>
+                `;
+              } else {
+                html += `
+                    <div style="border:1px solid #d1d5db; background:#f9fafb; padding:15px; margin-bottom:15px; border-radius:8px;">
+                        <div><strong>Status:</strong> <span style="color:${notif.status === 'rejected' ? '#dc2626' : '#64748b'}">${notif.status}</span></div>
+                        <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
+                        <div><strong>Message:</strong> ${notif.message || ''}</div>
+                        <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
+                    </div>
+                `;
+              }
             });
             list.innerHTML = html;
             console.log('[Student Notif] Rendered notifications for user:', user.uid);
@@ -134,6 +166,184 @@
         console.log('[Student Notif] window.firebaseAuth or onAuthStateChange not available');
       }
     };
+
+    // Student Agreement Modal Function
+    window.showStudentAgreement = function(applicationId, jobTitle, employerName, notificationId) {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:10000;';
+        
+        modal.innerHTML = `
+            <div style="background:#fff;padding:30px;border-radius:12px;max-width:800px;width:90%;max-height:90%;overflow-y:auto;">
+                <h2 style="color:#2563eb;margin-bottom:20px;">📄 CONTRACT 1: SHIFT – Student Agreement</h2>
+                <p style="margin-bottom:15px;"><strong>(Part-Time Job Participation Contract)</strong></p>
+                <p style="margin-bottom:20px;">This agreement ("Agreement") is made on <strong>${new Date().toLocaleDateString()}</strong> by and between:</p>
+                
+                <div style="border:1px solid #e5e7eb;padding:20px;border-radius:8px;background:#f9fafb;margin-bottom:20px;max-height:300px;overflow-y:auto;">
+                    <p><strong>SHIFT</strong> – a youth-led innovation platform based in Addis Ababa, Ethiopia, hereinafter referred to as "SHIFT" or "the Platform"</p>
+                    <p><strong>AND</strong></p>
+                    <p>Student Name: <strong>${user.name || '[Full Name]'}</strong><br>
+                    University & Department: <strong>${user.university || '[University Name]'}, ${user.department || '[Department]'}</strong><br>
+                    Phone: <strong>[To be filled below]</strong><br>
+                    Email: <strong>${user.email || '[Email Address]'}</strong></p>
+                    
+                    <hr style="margin:15px 0;">
+                    
+                    <h4>1. Legal Framework</h4>
+                    <p><strong>Offer:</strong> SHIFT offers students the opportunity to be matched with part-time work opportunities through the platform.</p>
+                    <p><strong>Acceptance:</strong> The student accepts the terms of participation by signing this contract.</p>
+                    <p><strong>Consideration:</strong> The student gains access to work and income; SHIFT collects a commission as compensation for services rendered.</p>
+                    
+                    <h4>2. Student Responsibilities</h4>
+                    <ul>
+                        <li>Fulfill all assigned tasks on time and with professionalism.</li>
+                        <li>Participate in any mandatory orientation or training provided.</li>
+                        <li>Respect the values, confidentiality, and workplace culture of the assigned company.</li>
+                        <li>Communicate promptly in case of delay, emergency, or job-related issues.</li>
+                    </ul>
+                    
+                    <h4>3. Payment & Commission</h4>
+                    <ul>
+                        <li>The student will be paid either a fixed fee, commission, or hourly rate, depending on the role.</li>
+                        <li>SHIFT shall deduct a 5% platform commission from the student's payment.</li>
+                    </ul>
+                </div>
+                
+                <form id="studentAgreementForm">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block;margin-bottom:5px;font-weight:bold;">Phone Number:</label>
+                        <input type="tel" id="studentPhone" placeholder="Enter your phone number" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:4px;font-size:16px;">
+                    </div>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block;margin-bottom:5px;font-weight:bold;">Digital Signature (Type your full name):</label>
+                        <input type="text" id="studentSignature" placeholder="Type your full name as signature" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:4px;font-size:16px;">
+                    </div>
+                    
+                    <label style="display:flex;align-items:flex-start;margin-bottom:20px;cursor:pointer;">
+                        <input type="checkbox" id="studentAgreementCheckbox" required style="margin-right:10px;margin-top:2px;transform:scale(1.2);">
+                        <span style="font-size:14px;"><strong style="color:#dc2626;">I have read and agree to the terms and conditions of this Student Agreement.</strong></span>
+                    </label>
+                    
+                    <div style="display:flex;gap:10px;">
+                        <button type="submit" style="background:#22c55e;color:#fff;border:none;padding:15px 30px;border-radius:6px;cursor:pointer;flex:1;font-size:16px;font-weight:bold;">✅ Sign Agreement</button>
+                        <button type="button" onclick="this.closest('[style*=\\"position:fixed\\"]').remove()" style="background:#6b7280;color:#fff;border:none;padding:15px 30px;border-radius:6px;cursor:pointer;font-size:16px;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('studentAgreementForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phone = document.getElementById('studentPhone').value.trim();
+            const signature = document.getElementById('studentSignature').value.trim();
+            const agreed = document.getElementById('studentAgreementCheckbox').checked;
+            
+            if (!phone || !signature || !agreed) {
+                alert('Please fill all fields and agree to the terms.');
+                return;
+            }
+            
+            try {
+                await saveStudentAgreement(applicationId, jobTitle, employerName, phone, signature, notificationId);
+                modal.remove();
+                alert('Agreement signed successfully! The employer will be notified.');
+                loadStudentNotifications(); // Reload notifications
+            } catch (error) {
+                console.error('Error saving agreement:', error);
+                alert('Error saving agreement. Please try again.');
+            }
+        });
+    };
+
+    // Save Student Agreement
+    window.saveStudentAgreement = async function(applicationId, jobTitle, employerName, phone, signature, notificationId) {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const auth = window.firebaseAuth;
+        const db = window.firebaseFirestore;
+        const currentUser = auth?.currentUser;
+        
+        if (!currentUser || !db) {
+            throw new Error('Authentication required');
+        }
+        
+        const { collection, addDoc, doc, updateDoc, serverTimestamp, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+        
+        // Save agreement to agreements collection
+        const agreementData = {
+            type: 'student',
+            applicationId,
+            jobTitle,
+            employerName,
+            studentId: currentUser.uid,
+            studentName: user.name,
+            studentEmail: user.email,
+            studentUniversity: user.university,
+            studentDepartment: user.department,
+            studentPhone: phone,
+            studentSignature: signature,
+            signedAt: serverTimestamp(),
+            status: 'signed',
+            agreementDate: new Date().toLocaleDateString()
+        };
+        
+        await addDoc(collection(db, 'agreements'), agreementData);
+        
+        // Update application status
+        const appRef = doc(db, 'applications', applicationId);
+        await updateDoc(appRef, {
+            studentAgreementSigned: true,
+            studentAgreementSignedAt: serverTimestamp(),
+            studentPhone: phone
+        });
+        
+        // Update notification
+        const notifRef = doc(db, 'users', currentUser.uid, 'notifications', notificationId);
+        await updateDoc(notifRef, {
+            studentAgreementSigned: true
+        });
+        
+        // Get application data to notify employer
+        const appDoc = await getDoc(appRef);
+        if (appDoc.exists()) {
+            const appData = appDoc.data();
+            
+            // Notify employer that student has signed
+            const employerNotifRef = collection(db, 'users', appData.employerId, 'notifications');
+            await addDoc(employerNotifRef, {
+                type: 'student_agreement_signed',
+                applicationId,
+                jobTitle,
+                studentName: user.name,
+                message: `${user.name} has signed the student agreement. You should also agree and start the clock after 30 minutes.`,
+                timestamp: serverTimestamp(),
+                requiresEmployerAgreement: true
+            });
+        }
+        
+        console.log('Student agreement saved successfully');
+    };
+
+    // Add this script section to handle notifications properly
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Wait for Firebase to load
+        setTimeout(async () => {
+            if (window.firebaseAuth && window.firebaseFirestore) {
+                loadStudentNotifications();
+            }
+        }, 2000);
+    });
     </script>
   </body>
 </html>
+
+<!-- Add this to the notifications section in student-profile.html -->
+<div class="section" id="notifications">
+    <h2>📬 My Notifications</h2>
+    <div id="notificationsList">
+        <p>Loading notifications...</p>
+    </div>
+</div>

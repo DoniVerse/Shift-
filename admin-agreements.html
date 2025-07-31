@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIFT - Agreements Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; }
+        .agreement-card { border: 1px solid #e5e7eb; padding: 20px; margin: 15px 0; border-radius: 8px; background: #f9fafb; }
+        .status-signed { color: #22c55e; font-weight: bold; }
+        .status-pending { color: #f59e0b; font-weight: bold; }
+        .filter-section { margin-bottom: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px; }
+        .filter-section select, .filter-section input { margin: 5px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Agreements Management</h1>
+        
+        <div class="filter-section">
+            <label>Filter by Type:</label>
+            <select id="typeFilter">
+                <option value="">All Types</option>
+                <option value="student">Student Agreements</option>
+                <option value="employer">Employer Agreements</option>
+            </select>
+            
+            <label>Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="signed">Signed</option>
+                <option value="pending">Pending</option>
+            </select>
+            
+            <button onclick="loadAgreements()" style="background:#2563eb;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        
+        <div id="agreementsContainer">
+            <p>Loading agreements...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        
+        // Initialize Firebase (use your config)
+        const firebaseConfig = {
+            // Your Firebase config here
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.loadAgreements = async function() {
+            const container = document.getElementById('agreementsContainer');
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            try {
+                const agreementsRef = collection(db, 'agreements');
+                const q = query(agreementsRef, orderBy('signedAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                
+                let html = '';
+                let count = 0;
+                
+                querySnapshot.forEach((doc) => {
+                    const agreement = doc.data();
+                    
+                    // Apply filters
+                    if (typeFilter && agreement.type !== typeFilter) return;
+                    if (statusFilter && agreement.status !== statusFilter) return;
+                    
+                    count++;
+                    const signedDate = agreement.signedAt ? new Date(agreement.signedAt.seconds * 1000).toLocaleString() : 'Not signed';
+                    
+                    html += `
+                        <div class="agreement-card">
+                            <h3>${agreement.type === 'student' ? '👨‍🎓 Student Agreement' : '🏢 Employer Agreement'}</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <p><strong>Job Title:</strong> ${agreement.jobTitle}</p>
+                                    <p><strong>Application ID:</strong> ${agreement.applicationId}</p>
+                                    <p><strong>Agreement Date:</strong> ${agreement.agreementDate}</p>
+                                    <p><strong>Status:</strong> <span class="status-${agreement.status}">${agreement.status.toUpperCase()}</span></p>
+                                    <p><strong>Signed At:</strong> ${signedDate}</p>
+                                </div>
+                                <div>
+                                    ${agreement.type === 'student' ? `
+                                        <p><strong>Student:</strong> ${agreement.studentName}</p>
+                                        <p><strong>Email:</strong> ${agreement.studentEmail}</p>
+                                        <p><strong>University:</strong> ${agreement.studentUniversity}</p>
+                                        <p><strong>Department:</strong> ${agreement.studentDepartment}</p>
+                                        <p><strong>Phone:</strong> ${agreement.studentPhone}</p>
+                                        <p><strong>Signature:</strong> ${agreement.studentSignature}</p>
+                                    ` : `
+                                        <p><strong>Company:</strong> ${agreement.companyName}</p>
+                                        <p><strong>Email:</strong> ${agreement.employerEmail}</p>
+                                        <p><strong>Representative:</strong> ${agreement.representativeName}</p>
+                                        <p><strong>Phone:</strong> ${agreement.employerPhone}</p>
+                                        <p><strong>Signature:</strong> ${agreement.employerSignature}</p>
+                                        <p><strong>Student:</strong> ${agreement.studentName}</p>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            <!-- Agreement Actions -->
+                            <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e5e7eb;">
+                                <button onclick="viewAgreementDetails('${doc.id}')" style="background:#3b82f6;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-right:10px;">📄 View Details</button>
+                                <button onclick="downloadAgreement('${doc.id}')" style="background:#10b981;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">📥 Download</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (count === 0) {
+                    html = '<p style="text-align:center;color:#6b7280;padding:40px;">No agreements found matching the selected filters.</p>';
+                } else {
+                    html = `<p style="margin-bottom:20px;"><strong>Total Agreements:</strong> ${count}</p>` + html;
+                }
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading agreements:', error);
+                container.innerHTML = '<p style="color:#dc2626;">Error loading agreements. Please try again.</p>';
+            }
+        };
+        
+        // Load agreements on page load
+        document.addEventListener('DOMContentLoaded', loadAgreements);
+
+        // Add agreement detail functions
+        window.viewAgreementDetails = async function(agreementId) {
+            try {
+                const agreementRef = doc(db, 'agreements', agreementId);
+                const agreementDoc = await getDocs(agreementRef);
+                
+                if (!agreementDoc.exists()) {
+                    alert('Agreement not found');
+                    return;
+                }
+                
+                const agreement = agreementDoc.data();
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:10000;';
+                
+                modal.innerHTML = `
+                    <div style="background:#fff;padding:30px;border-radius:12px;max-width:800px;width:90%;max-height:90%;overflow-y:auto;">
+                        <h2>📄 Agreement Details</h2>
+                        <div style="margin-bottom:20px;">
+                            <h3>${agreement.type === 'student' ? 'Student Agreement' : 'Employer Agreement'}</h3>
+                            <p><strong>Job:</strong> ${agreement.jobTitle}</p>
+                            <p><strong>Signed:</strong> ${agreement.signedAt ? new Date(agreement.signedAt.seconds * 1000).toLocaleString() : 'Not signed'}</p>
+                            <p><strong>Status:</strong> ${agreement.status}</p>
+                        </div>
+                        
+                        ${agreement.type === 'student' ? `
+                            <div style="border:1px solid #e5e7eb;padding:15px;border-radius:8px;margin-bottom:15px;">
+                                <h4>Student Information</h4>
+                                <p><strong>Name:</strong> ${agreement.studentName}</p>
+                                <p><strong>Email:</strong> ${agreement.studentEmail}</p>
+                                <p><strong>University:</strong> ${agreement.studentUniversity}</p>
+                                <p><strong>Department:</strong> ${agreement.studentDepartment}</p>
+                                <p><strong>Phone:</strong> ${agreement.studentPhone}</p>
+                                <p><strong>Signature:</strong> ${agreement.studentSignature}</p>
+                            </div>
+                        ` : `
+                            <div style="border:1px solid #e5e7eb;padding:15px;border-radius:8px;margin-bottom:15px;">
+                                <h4>Employer Information</h4>
+                                <p><strong>Company:</strong> ${agreement.companyName}</p>
+                                <p><strong>Email:</strong> ${agreement.employerEmail}</p>
+                                <p><strong>Representative:</strong> ${agreement.representativeName}</p>
+                                <p><strong>Phone:</strong> ${agreement.employerPhone}</p>
+                                <p><strong>Signature:</strong> ${agreement.employerSignature}</p>
+                                <p><strong>Student:</strong> ${agreement.studentName}</p>
+                            </div>
+                        `}
+                        
+                        <button onclick="this.closest('[style*=\\"position:fixed\\"]').remove()" style="background:#6b7280;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">Close</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                console.error('Error viewing agreement:', error);
+                alert('Error loading agreement details');
+            }
+        };
+
+        window.downloadAgreement = function(agreementId) {
+            // Simple download functionality - you can enhance this
+            alert('Download functionality would be implemented here for agreement: ' + agreementId);
+        };
+    </script>
+</body>
+</html>
+
+
+
+
