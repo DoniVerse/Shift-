@@ -123,7 +123,7 @@
               if (notif.status === 'accepted' && notif.requiresAgreement) {
                 html += `
                     <div style="border:2px solid #22c55e; background:#d4edda; padding:15px; margin-bottom:15px; border-radius:8px;">
-                        <div><strong>Status:</strong> <span style="color:#22c55e; font-weight:bold;">ACCEPTED</span></div>
+                        <div><strong>Status:</strong> <span style="color:#22c55e; font-weight:bold;">ACCEPTED by ${notif.employerName || 'Company'}</span></div>
                         <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
                         <div><strong>Message:</strong> ${notif.message || ''}</div>
                         <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>

@@ -387,70 +387,16 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('closeJobModal').onclick = function() {
             modal.style.display = 'none';
         };
-        // Apply button - Enhanced with better data loading
+        // Apply button
         document.getElementById('applyJobBtn').onclick = async function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const firebaseUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : '';
-            
+            console.log('window.firebaseAuth:', window.firebaseAuth);
+            console.log('window.firebaseAuth.currentUser:', window.firebaseAuth && window.firebaseAuth.currentUser);
             if (!firebaseUid) {
                 alert('You must be signed in to apply. Please log in again.');
                 return;
             }
-
-            console.log('Starting job application for user:', firebaseUid);
-
-            // Load additional student data from Firestore
-            let resumeData = {};
-            let skillsData = {};
-            let educationData = {};
-            let userProfileData = {};
-            
-            try {
-                const auth = window.firebaseAuth;
-                const db = window.firebaseFirestore;
-                const currentUser = auth?.currentUser;
-                
-                if (currentUser && db) {
-                    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-                    const userDocRef = doc(db, 'users', currentUser.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        console.log('Loaded user data from Firestore:', userData);
-                        
-                        userProfileData = userData;
-                        resumeData = userData.resumeData || {};
-                        skillsData = userData.skillsData || {};
-                        educationData = userData.educationData || {};
-                        
-                        console.log('Resume data:', resumeData);
-                        console.log('Skills data:', skillsData);
-                        console.log('Education data:', educationData);
-                    } else {
-                        console.log('No user document found in Firestore');
-                    }
-                }
-                
-                // Fallback to localStorage if Firestore fails or has no data
-                if (!resumeData.summary && !skillsData.skills && !educationData.gpa) {
-                    console.log('Falling back to localStorage');
-                    resumeData = JSON.parse(localStorage.getItem('resumeData') || '{}');
-                    skillsData = JSON.parse(localStorage.getItem('skillsData') || '{}');
-                    educationData = JSON.parse(localStorage.getItem('educationData') || '{}');
-                    
-                    console.log('LocalStorage Resume data:', resumeData);
-                    console.log('LocalStorage Skills data:', skillsData);
-                    console.log('LocalStorage Education data:', educationData);
-                }
-            } catch (error) {
-                console.error('Error loading student profile data:', error);
-                // Use localStorage as fallback
-                resumeData = JSON.parse(localStorage.getItem('resumeData') || '{}');
-                skillsData = JSON.parse(localStorage.getItem('skillsData') || '{}');
-                educationData = JSON.parse(localStorage.getItem('educationData') || '{}');
-            }
-
             const application = {
                 jobId: job.id,
                 jobTitle: job.title,
@@ -465,30 +411,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 studentDepartment: user.department || '',
                 studentId: firebaseUid, // Use actual Firebase UID
                 status: 'applied',
-                appliedAt: new Date().toISOString(),
-                
-                // Additional profile information
-                resumeFileName: resumeData.fileName || 'Not uploaded',
-                resumeSummary: resumeData.summary || 'Not provided',
-                
-                skills: skillsData.skills || [],
-                workExperience: skillsData.experience || [],
-                certifications: skillsData.certifications || 'Not provided',
-                
-                gpa: educationData.gpa || 'Not provided',
-                graduationDate: educationData.graduationDate || 'Not provided',
-                relevantCourses: educationData.relevantCourses || 'Not provided',
-                academicAchievements: educationData.achievements || 'Not provided'
+                appliedAt: new Date().toISOString()
             };
-
             // Debug logging
-            console.log('Submitting enhanced application:', application);
-            
+            console.log('Submitting application:', application);
+            console.log('Current Firebase UID:', firebaseUid);
+            console.log('Auth user:', window.firebaseAuth && window.firebaseAuth.currentUser);
             try {
                 if (window.jobManager && window.jobManager.submitApplication) {
                     const result = await window.jobManager.submitApplication(application);
                     if (result.success) {
-                        alert('Application submitted successfully!');
+                        alert('Application submitted!');
                         modal.style.display = 'none';
                     } else {
                         alert('Failed to apply: ' + (result.error || 'Unknown error'));
