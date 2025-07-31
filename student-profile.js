@@ -39,12 +39,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (userDoc.exists()) {
                     const firestoreData = userDoc.data();
+                    console.log('Firestore user data:', firestoreData);
+                    
                     // Merge Firestore data with localStorage data
                     userData = {
                         ...userData,
                         name: firestoreData.name || userData.name,
-                        profilePicture: firestoreData.profilePicture
+                        profilePicture: firestoreData.profilePicture || firestoreData.logo
                     };
+                    
+                    // Update localStorage with Firestore data
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
                 }
             } catch (error) {
                 console.error('Error loading profile from Firestore:', error);
@@ -53,12 +58,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('profileName').textContent = userData.name;
         
-        // Load profile picture - check Firestore first, then localStorage
+        // Load profile picture - check multiple sources
         const profilePictureUrl = userData.profilePicture || localStorage.getItem('profilePicture');
+        console.log('Profile picture URL:', profilePictureUrl);
         
         if (profilePictureUrl) {
             const img = document.createElement('img');
             img.src = profilePictureUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '50%';
             profilePicture.innerHTML = '';
             profilePicture.appendChild(img);
         }
@@ -370,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const formData = new FormData(form);
         let data = {};
         let error = '';
 
@@ -378,17 +387,21 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'resume':
                 const summary = document.getElementById('resumeSummary').value.trim();
                 const fileInput = document.getElementById('resumeFile');
-                const fileName = fileInput.files[0]?.name || JSON.parse(localStorage.getItem('resumeData') || '{}').fileName;
+                const existingData = JSON.parse(localStorage.getItem('resumeData') || '{}');
+                const fileName = fileInput.files[0]?.name || existingData.fileName || 'Not uploaded';
+                
                 if (!summary) {
                     error = 'Professional summary is required.';
                 } else {
-                    data = { summary, fileName: fileName || 'No file uploaded' };
+                    data = { summary, fileName };
                 }
                 break;
+                
             case 'skills':
                 const skills = document.getElementById('skills').value.trim();
                 const experience = document.getElementById('experience').value.trim();
                 const certifications = document.getElementById('certifications').value.trim();
+                
                 if (!skills || !experience || !certifications) {
                     error = 'All fields are required.';
                 } else {
@@ -399,11 +412,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 }
                 break;
+                
             case 'education':
                 const gpa = document.getElementById('gpa').value.trim();
                 const graduationDate = document.getElementById('graduationDate').value.trim();
                 const relevantCourses = document.getElementById('relevantCourses').value.trim();
                 const achievements = document.getElementById('achievements').value.trim();
+                
                 if (!gpa || !graduationDate || !relevantCourses || !achievements) {
                     error = 'All fields are required.';
                 } else {
@@ -418,6 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.style.marginTop = '10px';
             errorDiv.textContent = error;
             form.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
             return;
         }
 
@@ -432,6 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateData.updatedAt = new Date();
             
             await updateDoc(userDocRef, updateData);
+            console.log(`${section} data saved to Firestore:`, data);
             
             // Also save to localStorage for backward compatibility
             localStorage.setItem(section + 'Data', JSON.stringify(data));

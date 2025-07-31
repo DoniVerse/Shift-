@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('closeJobModal').onclick = function() {
             modal.style.display = 'none';
         };
-        // Apply button
+        // Apply button - Enhanced with better data loading
         document.getElementById('applyJobBtn').onclick = async function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const firebaseUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : '';
@@ -397,10 +397,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            console.log('Starting job application for user:', firebaseUid);
+
             // Load additional student data from Firestore
             let resumeData = {};
             let skillsData = {};
             let educationData = {};
+            let userProfileData = {};
             
             try {
                 const auth = window.firebaseAuth;
@@ -414,21 +417,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
+                        console.log('Loaded user data from Firestore:', userData);
+                        
+                        userProfileData = userData;
                         resumeData = userData.resumeData || {};
                         skillsData = userData.skillsData || {};
                         educationData = userData.educationData || {};
+                        
+                        console.log('Resume data:', resumeData);
+                        console.log('Skills data:', skillsData);
+                        console.log('Education data:', educationData);
+                    } else {
+                        console.log('No user document found in Firestore');
                     }
                 }
                 
-                // Fallback to localStorage if Firestore fails
-                if (!resumeData.summary) {
+                // Fallback to localStorage if Firestore fails or has no data
+                if (!resumeData.summary && !skillsData.skills && !educationData.gpa) {
+                    console.log('Falling back to localStorage');
                     resumeData = JSON.parse(localStorage.getItem('resumeData') || '{}');
-                }
-                if (!skillsData.skills) {
                     skillsData = JSON.parse(localStorage.getItem('skillsData') || '{}');
-                }
-                if (!educationData.gpa) {
                     educationData = JSON.parse(localStorage.getItem('educationData') || '{}');
+                    
+                    console.log('LocalStorage Resume data:', resumeData);
+                    console.log('LocalStorage Skills data:', skillsData);
+                    console.log('LocalStorage Education data:', educationData);
                 }
             } catch (error) {
                 console.error('Error loading student profile data:', error);
