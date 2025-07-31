@@ -24,11 +24,12 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+>
+        </button>
+    </nav>
     <script type="module">
         import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getFirestore, collection, getDocs, doc, getDoc, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
         // Firebase config (reuse from firebase-auth.js)
         const firebaseConfig = {
             apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
@@ -63,31 +64,6 @@
             const userDoc = await getDoc(doc(db, 'users', uid));
             return userDoc.exists() ? userDoc.data() : null;
         }
-        // Helper to get agreement status
-        async function getAgreementStatus(applicationId) {
-            try {
-                const agreementsRef = collection(db, 'agreements');
-                const q = query(agreementsRef, where('applicationId', '==', applicationId));
-                const snapshot = await getDocs(q);
-                
-                let studentAgreement = false;
-                let employerAgreement = false;
-                
-                snapshot.forEach(doc => {
-                    const agreement = doc.data();
-                    if (agreement.type === 'student') {
-                        studentAgreement = true;
-                    } else if (agreement.type === 'employer') {
-                        employerAgreement = true;
-                    }
-                });
-                
-                return { studentAgreement, employerAgreement };
-            } catch (error) {
-                console.error('Error fetching agreement status:', error);
-                return { studentAgreement: false, employerAgreement: false };
-            }
-        }
         // Load all applications and group by employer/job
         async function loadApplicationsOverview() {
             const applicationsCol = collection(db, 'applications');
@@ -116,12 +92,6 @@
                             const studentInfo = await getStudentInfo(app.studentId);
                             app.studentName = studentInfo ? (studentInfo.fullName || studentInfo.name || studentInfo.displayName || studentInfo.email || app.studentId) : app.studentId;
                         }
-                        
-                        // Get agreement status for accepted applications
-                        if (app.status === 'accepted') {
-                            const agreementStatus = await getAgreementStatus(app.id || app.applicationId);
-                            app.agreementStatus = agreementStatus;
-                        }
                     }
                 }
             }
@@ -130,7 +100,7 @@
             if (!container) return;
             let html = '';
             for (const [employerId, employerData] of Object.entries(employerMap)) {
-                const employerName = employerData.employerInfo?.companyName || employerData.employerInfo?.name || employerId;
+                const employerName = employerData.employerInfo?.name || employerId;
                 const employerEmail = employerData.employerInfo?.email || '';
                 const employerDisplay = employerEmail ? `${employerName} (${employerEmail})` : employerName;
                 html += `<div style="margin-bottom:24px;"><h3 style="margin-bottom:8px;">Employer: ${employerDisplay}</h3>`;
@@ -190,21 +160,7 @@
                         const studentName = app.studentName || app.studentId || 'Unknown';
                         const studentEmail = app.studentEmail || '';
                         const studentDisplay = studentEmail ? `${studentName} (${studentEmail})` : studentName;
-                        
-                        // Agreement status display
-                        let agreementDisplay = '';
-                        if (app.status === 'accepted' && app.agreementStatus) {
-                            const { studentAgreement, employerAgreement } = app.agreementStatus;
-                            if (studentAgreement && employerAgreement) {
-                                agreementDisplay = ' | <span style="color:#22c55e;font-weight:bold;">✅ Both Agreements Signed</span>';
-                            } else if (studentAgreement || employerAgreement) {
-                                agreementDisplay = ` | <span style="color:#f59e0b;font-weight:bold;">⏳ Agreements: Student ${studentAgreement ? '✅' : '❌'} | Employer ${employerAgreement ? '✅' : '❌'}</span>`;
-                            } else {
-                                agreementDisplay = ' | <span style="color:#dc2626;font-weight:bold;">❌ No Agreements Signed</span>';
-                            }
-                        }
-                        
-                        html += `<li><strong>Student:</strong> ${studentDisplay} | <strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'#dc2626':'#eab308'};font-weight:bold;">${app.status || 'pending'}</span>${agreementDisplay}${statusTime}${startedAt}${finishedAt}</li>`;
+                        html += `<li><strong>Student:</strong> ${studentDisplay} | <strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'#dc2626':'#eab308'};font-weight:bold;">${app.status || 'pending'}</span>${statusTime}${startedAt}${finishedAt}</li>`;
                     }
                     html += '</ul></div>';
                 }
@@ -235,4 +191,4 @@
     </script>
     <script src="chat-integration-widget.js"></script>
 </body>
-</html> 
+</html>
