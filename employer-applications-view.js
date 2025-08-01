@@ -33,7 +33,6 @@ export async function renderEmployerApplications(targetElement, employerId, opti
     let html = '';
     querySnapshot.forEach(docSnap => {
       const app = docSnap.data();
-      console.log('Application data:', app); // Debug log
       
       // Basic info with fallbacks
       const university = app.studentUniversity || app.universityName || app.university || 'Not provided';
@@ -54,11 +53,6 @@ export async function renderEmployerApplications(targetElement, employerId, opti
       const relevantCourses = app.relevantCourses || 'Not provided';
       const academicAchievements = app.academicAchievements || 'Not provided';
       const linkedIn = app.studentLinkedIn || app.linkedinUrl || 'Not provided';
-
-      console.log('Processed data:', {
-        resumeFileName, resumeSummary, skills, workExperience, certifications,
-        gpa, graduationDate, relevantCourses, academicAchievements
-      });
 
       html += `
         <div class="application-card" style="border:1px solid #d1d5db; background:#f9fafb; padding:1.5em; margin-bottom:1.5em; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">

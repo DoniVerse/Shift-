@@ -2,10 +2,6 @@
 import { collection, query, where, getDocs, doc, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Debug: Log the state of globals
-  console.log('DEBUG: window.firebaseAuth:', window.firebaseAuth);
-  console.log('DEBUG: window.firebaseFirestore:', window.firebaseFirestore);
-  console.log('DEBUG: window.jobManager:', window.jobManager);
 
   // Wait for Firebase Auth to be ready
   if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
@@ -16,13 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       // Now user is guaranteed to be loaded
-      console.log('DEBUG: Auth user loaded:', user);
-      console.log('DEBUG: window.firebaseFirestore at load:', window.firebaseFirestore);
       loadEmployerApplications(user.uid);
     });
-  } else {
-    // Only log a warning, do not show a message in the UI
-    console.warn('DEBUG: window.firebaseAuth or onAuthStateChange not available', window.firebaseAuth);
   }
 });
 

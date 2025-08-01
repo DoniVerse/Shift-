@@ -27,10 +27,8 @@ const firebaseConfig = {
 let app;
 try {
   app = getApp();
-  console.log('Using existing Firebase app');
 } catch (e) {
   app = initializeApp(firebaseConfig);
-  console.log('Initialized new Firebase app');
 }
 
 const db = getFirestore(app);
@@ -47,7 +45,6 @@ class JobManager {
 
         onAuthStateChanged(this.auth, (user) => {
             this.currentUser = user;
-            console.log('🔐 Auth state changed:', user ? `Logged in as ${user.email}` : 'Not logged in');
         });
     }
 
@@ -59,9 +56,6 @@ class JobManager {
         }
 
         try {
-            console.log('📝 Publishing job to Firebase:', jobData);
-            console.log('🔍 Firebase config:', this.db.app.options);
-
             const jobDoc = {
                 title: jobData.title,
                 description: jobData.description,
@@ -77,11 +71,7 @@ class JobManager {
                 updatedAt: serverTimestamp()
             };
 
-            console.log('🔍 Attempting to write to collection:', this.jobsCollection);
-            console.log('🔍 Document data:', jobDoc);
-
             const docRef = await addDoc(collection(this.db, this.jobsCollection), jobDoc);
-            console.log('✅ Job published with ID:', docRef.id);
 
             return {
                 success: true,
@@ -89,11 +79,7 @@ class JobManager {
                 message: 'Job published successfully!'
             };
         } catch (error) {
-            console.error('❌ Error publishing job:', error);
-            console.error('❌ Error code:', error.code);
-            console.error('❌ Error message:', error.message);
-            console.error('❌ Full error:', error);
-
+            console.error('Error publishing job:', error.message);
             return {
                 success: false,
                 error: error.message,
@@ -105,9 +91,6 @@ class JobManager {
     // Get jobs by category
     async getJobsByCategory(category) {
         try {
-            console.log('🔍 Fetching jobs for category:', category);
-
-            // Simplified query without orderBy to avoid index requirement
             const q = query(
                 collection(this.db, this.jobsCollection),
                 where('category', '==', category),
@@ -130,11 +113,9 @@ class JobManager {
             // Sort manually by creation date (newest first)
             jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-            console.log(`✅ Found ${jobs.length} jobs for category ${category}`);
             return jobs;
         } catch (error) {
-            console.error('❌ Error fetching jobs:', error);
-            console.error('❌ Error details:', error.code, error.message);
+            console.error('Error fetching jobs:', error.message);
             return [];
         }
     }
@@ -142,8 +123,6 @@ class JobManager {
     // Get all jobs
     async getAllJobs() {
         try {
-            console.log('🔍 Fetching all jobs');
-            
             const q = query(
                 collection(this.db, this.jobsCollection),
                 where('status', '==', 'active'),
@@ -160,10 +139,9 @@ class JobManager {
                 });
             });
 
-            console.log(`✅ Found ${jobs.length} total jobs`);
             return jobs;
         } catch (error) {
-            console.error('❌ Error fetching all jobs:', error);
+            console.error('Error fetching all jobs:', error.message);
             return [];
         }
     }
@@ -173,14 +151,11 @@ class JobManager {
         if (!employerId) {
             const user = window.firebaseAuth && window.firebaseAuth.currentUser;
             if (!user) {
-                console.error('No employerId provided and no user logged in');
                 return [];
             }
             employerId = user.uid;
         }
         try {
-            console.log('🔍 Fetching jobs for employer:', employerId);
-
             const q = query(
                 collection(this.db, this.jobsCollection),
                 where('employerId', '==', employerId),
@@ -197,10 +172,9 @@ class JobManager {
                 });
             });
 
-            console.log(`✅ Found ${jobs.length} jobs for employer ${employerId}`);
             return jobs;
         } catch (error) {
-            console.error('❌ Error fetching employer jobs:', error);
+            console.error('Error fetching employer jobs:', error.message);
             return [];
         }
     }
@@ -208,27 +182,24 @@ class JobManager {
     // Submit job application
     async submitApplication(applicationData) {
         try {
-            console.log('📝 Submitting application to Firebase:', applicationData);
-            
             const appDoc = {
                 jobId: applicationData.jobId,
                 jobTitle: applicationData.jobTitle,
                 jobCategory: applicationData.jobCategory,
                 employerName: applicationData.employerName,
                 employerEmail: applicationData.employerEmail,
-                employerId: applicationData.employerId, // Ensures the employer's UID is saved with the application
+                employerId: applicationData.employerId,
                 studentName: applicationData.studentName,
                 studentEmail: applicationData.studentEmail,
                 studentYear: applicationData.studentYear,
                 studentUniversity: applicationData.studentUniversity,
                 studentDepartment: applicationData.studentDepartment,
-                studentId: applicationData.studentId, // Always include studentId (Firebase UID)
+                studentId: applicationData.studentId,
                 status: 'applied',
                 createdAt: serverTimestamp()
             };
 
             const docRef = await addDoc(collection(this.db, this.applicationsCollection), appDoc);
-            console.log('✅ Application submitted with ID:', docRef.id);
             
             return {
                 success: true,
@@ -236,7 +207,7 @@ class JobManager {
                 message: 'Application submitted successfully!'
             };
         } catch (error) {
-            console.error('❌ Error submitting application:', error);
+            console.error('Error submitting application:', error.message);
             return {
                 success: false,
                 error: error.message
@@ -248,14 +219,12 @@ class JobManager {
     async getApplicationsByEmployer(employerId) {
         try {
             if (!employerId) {
-                console.error('🚫 No employerId provided for getting applications');
                 return [];
             }
-            console.log('🔍 Fetching applications for employer ID:', employerId);
             
             const q = query(
                 collection(this.db, this.applicationsCollection),
-                where('employerId', '==', employerId), // Correctly query by employer's UID
+                where('employerId', '==', employerId),
                 orderBy('createdAt', 'desc')
             );
 
@@ -269,10 +238,9 @@ class JobManager {
                 });
             });
 
-            console.log(`✅ Found ${applications.length} applications for employer ${employerId}`);
             return applications;
         } catch (error) {
-            console.error('❌ Error fetching applications:', error);
+            console.error('Error fetching applications:', error.message);
             return [];
         }
     }
@@ -281,7 +249,6 @@ class JobManager {
 // Create global instance
 window.jobManager = new JobManager();
 window.firebaseFirestore = window.jobManager.db;
-console.log('window.firebaseFirestore set by firebase-jobs.js!');
 
 // Export for use in other files
 export default JobManager;

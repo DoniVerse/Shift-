@@ -103,12 +103,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function getUserData() {
         // Try to get from localStorage first (from signup/login)
         const userData = localStorage.getItem('currentUser');
-        console.log('Raw user data from localStorage:', userData);
 
         if (userData) {
             const parsedData = JSON.parse(userData);
-            console.log('Parsed user data:', parsedData);
-            console.log('Year of study:', parsedData.yearOfStudy);
             return parsedData;
         }
 
@@ -118,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
             name: urlParams.get('name') || 'Student',
             yearOfStudy: parseInt(urlParams.get('year')) || 2
         };
-        console.log('Using fallback data:', fallbackData);
         return fallbackData;
     }
 
@@ -167,48 +163,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const userYear = parseInt(userData.yearOfStudy) || 2;
         const category = yearToCategory[userYear];
 
-        // Debug student filtering
-        console.log('🎓 STUDENT FILTERING DEBUG:');
-        console.log('🎓 Student data:', userData);
-        console.log('🎓 Student year:', userYear);
-        console.log('🎓 Category for this year:', category);
-        console.log('🎓 Available categories:', Object.values(yearToCategory));
-
-        // PRIMARY: Get jobs from Firebase (where employers publish them)
-        console.log('🔥 Student looking for Firebase jobs in category:', category);
-
         let jobs = [];
 
         // Try Firebase first
         try {
             if (window.jobManager) {
-                console.log('🔥 Fetching from Firebase...');
                 const firebaseJobs = await window.jobManager.getJobsByCategory(category);
                 jobs = firebaseJobs;
-                console.log('🔥 Firebase jobs found:', jobs.length);
             } else {
                 throw new Error('Firebase not available');
             }
         } catch (firebaseError) {
-            console.error('🔥 Firebase error, using fallback:', firebaseError);
-
             // Fallback to local storage
             let allJobs = [];
             if (window.localJobsManager) {
-                console.log('📱 Using Local Jobs Manager fallback');
                 allJobs = window.localJobsManager.getAllJobs();
             } else {
-                console.log('📱 Using direct localStorage fallback');
                 allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
             }
 
             jobs = allJobs.filter(job => {
-                console.log(`🔍 Checking job: ${job.title} | Category: ${job.category} | Looking for: ${category}`);
                 return job.category === category;
             });
         }
-
-        console.log('✅ Final jobs for student:', jobs.length, jobs);
 
         // If no jobs posted by employers, fallback to static
         let jobsToShow = jobs;
@@ -331,7 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Handle navigation
                 const label = this.querySelector('.nav-label').textContent;
-                console.log('Navigation clicked:', label);
                 
                 switch(label) {
                     case 'Home':
@@ -391,8 +367,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('applyJobBtn').onclick = async function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const firebaseUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : '';
-            console.log('window.firebaseAuth:', window.firebaseAuth);
-            console.log('window.firebaseAuth.currentUser:', window.firebaseAuth && window.firebaseAuth.currentUser);
             if (!firebaseUid) {
                 alert('You must be signed in to apply. Please log in again.');
                 return;
@@ -413,10 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 status: 'applied',
                 appliedAt: new Date().toISOString()
             };
-            // Debug logging
-            console.log('Submitting application:', application);
-            console.log('Current Firebase UID:', firebaseUid);
-            console.log('Auth user:', window.firebaseAuth && window.firebaseAuth.currentUser);
             try {
                 if (window.jobManager && window.jobManager.submitApplication) {
                     const result = await window.jobManager.submitApplication(application);

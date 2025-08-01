@@ -22,8 +22,6 @@ class LocalJobsManager {
     // Publish a new job
     publishJob(jobData) {
         try {
-            console.log('📝 Publishing job locally:', jobData);
-            
             const job = {
                 id: this.generateId(),
                 title: jobData.title,
@@ -44,8 +42,6 @@ class LocalJobsManager {
             const jobs = this.getAllJobs();
             jobs.push(job);
             localStorage.setItem(this.jobsKey, JSON.stringify(jobs));
-            
-            console.log('✅ Job published locally with ID:', job.id);
             
             return {
                 success: true,
@@ -79,7 +75,6 @@ class LocalJobsManager {
                 job.category === category && job.status === 'active'
             );
             
-            console.log(`✅ Found ${categoryJobs.length} jobs for category ${category}`);
             return categoryJobs;
         } catch (error) {
             console.error('❌ Error fetching jobs by category:', error);
@@ -95,7 +90,6 @@ class LocalJobsManager {
                 job.employerEmail === employerEmail
             );
             
-            console.log(`✅ Found ${employerJobs.length} jobs for employer ${employerEmail}`);
             return employerJobs;
         } catch (error) {
             console.error('❌ Error fetching employer jobs:', error);
@@ -106,7 +100,6 @@ class LocalJobsManager {
     // Submit job application
     submitApplication(applicationData) {
         try {
-            console.log('📝 Submitting application locally:', applicationData);
             
             const application = {
                 id: this.generateId(),
@@ -128,8 +121,6 @@ class LocalJobsManager {
             const applications = this.getAllApplications();
             applications.push(application);
             localStorage.setItem(this.applicationsKey, JSON.stringify(applications));
-            
-            console.log('✅ Application submitted locally with ID:', application.id);
             
             return {
                 success: true,
@@ -163,7 +154,6 @@ class LocalJobsManager {
                 app.employerEmail === employerEmail
             );
             
-            console.log(`✅ Found ${employerApplications.length} applications for employer ${employerEmail}`);
             return employerApplications;
         } catch (error) {
             console.error('❌ Error fetching applications:', error);
@@ -178,7 +168,6 @@ class LocalJobsManager {
             const updatedJobs = jobs.filter(job => job.id !== jobId);
             localStorage.setItem(this.jobsKey, JSON.stringify(updatedJobs));
             
-            console.log('✅ Job deleted:', jobId);
             return { success: true };
         } catch (error) {
             console.error('❌ Error deleting job:', error);
@@ -197,7 +186,6 @@ class LocalJobsManager {
                 applications[appIndex].updatedAt = new Date().toISOString();
                 localStorage.setItem(this.applicationsKey, JSON.stringify(applications));
                 
-                console.log('✅ Application status updated:', applicationId, status);
                 return { success: true };
             } else {
                 throw new Error('Application not found');
@@ -213,7 +201,6 @@ class LocalJobsManager {
         localStorage.removeItem(this.jobsKey);
         localStorage.removeItem(this.applicationsKey);
         localStorage.removeItem(this.syncKey);
-        console.log('🗑️ All job data cleared');
     }
 
     // Get statistics
@@ -233,6 +220,3 @@ class LocalJobsManager {
 
 // Create global instance
 window.localJobsManager = new LocalJobsManager();
-
-console.log('📋 Local Jobs Manager initialized');
-console.log('📊 Current stats:', window.localJobsManager.getStats());

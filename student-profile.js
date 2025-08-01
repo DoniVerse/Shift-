@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (userDoc.exists()) {
                     const firestoreData = userDoc.data();
-                    console.log('Firestore user data:', firestoreData);
+            
                     
                     // Merge Firestore data with localStorage data
                     userData = {
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Load profile picture - check multiple sources
         const profilePictureUrl = userData.profilePicture || localStorage.getItem('profilePicture');
-        console.log('Profile picture URL:', profilePictureUrl);
+
         
         if (profilePictureUrl) {
             const img = document.createElement('img');
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             profilePicture: e.target.result,
                             updatedAt: new Date()
                         });
-                        console.log('Profile picture saved to Firestore');
+                
                     } catch (error) {
                         console.error('Error saving profile picture to Firestore:', error);
                     }
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateData.updatedAt = new Date();
             
             await updateDoc(userDocRef, updateData);
-            console.log(`${section} data saved to Firestore:`, data);
+    
             
             // Also save to localStorage for backward compatibility
             localStorage.setItem(section + 'Data', JSON.stringify(data));
@@ -613,7 +613,7 @@ window.editPersonalInfo = function() {
                     linkedinUrl: linkedin,
                     updatedAt: new Date()
                 });
-                console.log('Personal info saved to Firestore');
+        
             } catch (error) {
                 console.error('Error saving personal info to Firestore:', error);
             }

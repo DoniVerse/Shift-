@@ -76,14 +76,12 @@ class FirebaseAuthManager {
         // Student signup form
         const studentForm = document.getElementById('student-signup-form');
         if (studentForm) {
-            console.log('Student signup form found, adding event listener');
             studentForm.addEventListener('submit', (e) => this.handleStudentSignup(e));
         }
 
         // Employer signup form
         const employerForm = document.getElementById('employer-signup-form');
         if (employerForm) {
-            console.log('Employer signup form found, adding event listener');
             employerForm.addEventListener('submit', (e) => this.handleEmployerSignup(e));
         }
     }
@@ -93,14 +91,12 @@ class FirebaseAuthManager {
         // Student login form
         const studentLoginForm = document.getElementById('student-login-form');
         if (studentLoginForm) {
-            console.log('Student login form found, adding event listener');
             studentLoginForm.addEventListener('submit', (e) => this.handleStudentLogin(e));
         }
 
         // Employer login form
         const employerLoginForm = document.getElementById('employer-signin-form');
         if (employerLoginForm) {
-            console.log('Employer login form found, adding event listener');
             employerLoginForm.addEventListener('submit', (e) => this.handleEmployerLogin(e));
         }
     }
@@ -130,8 +126,6 @@ class FirebaseAuthManager {
             termsAcceptedAt: new Date().toISOString()
         };
 
-        console.log('Student signup data:', userData);
-
         try {
             await this.registerUser(userData);
         } catch (error) {
@@ -152,7 +146,6 @@ class FirebaseAuthManager {
         }
 
         const logoDataUrl = window.logoDataUrl || '';
-        console.log('Employer logoDataUrl:', logoDataUrl);
 
         if (!logoDataUrl) {
             alert('Please upload your company logo before signing up.');
@@ -172,7 +165,7 @@ class FirebaseAuthManager {
             termsAcceptedAt: new Date().toISOString()
         };
 
-        console.log('Employer signup data:', userData);
+
 
         try {
             await this.registerUser(userData);
@@ -350,7 +343,7 @@ class FirebaseAuthManager {
             }
         }
 
-        console.log('Creating user profile:', userProfile);
+
         await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
         return userProfile;
     }
@@ -415,7 +408,7 @@ class FirebaseAuthManager {
         localStorage.setItem('currentUser', JSON.stringify(localData));
         localStorage.setItem('employerInfo', JSON.stringify(localData)); // Also update employerInfo for profile page
         localStorage.setItem('userAuthenticated', 'true');
-        console.log('User data stored in localStorage:', localData);
+
     }
 
     // Sync user data
@@ -474,7 +467,7 @@ class FirebaseAuthManager {
             localStorage.removeItem('currentUser');
             localStorage.removeItem('userAuthenticated');
 
-            console.log('User signed out and localStorage cleared');
+    
             window.location.href = 'landing.html';
         } catch (error) {
             console.error('Sign out error:', error);
