@@ -67,13 +67,13 @@ async function loadEmployerApplications(employerUid) {
           ${app.status === 'accepted' && bothAgreementsSigned && !app.startedAt ? `
             <button onclick="handleStartJob('${docSnap.id}')">Start</button>
             <div style="margin-top:10px;">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('Job: ' + app.jobTitle + ' - Student: ' + app.studentName)}" alt="QR Code" style="border:1px solid #ccc;">
+              <img src="QR.jpg" alt="QR Code" style="border:1px solid #ccc;width:150px;height:150px;">
             </div>
           ` : ''}
           ${app.status === 'accepted' && bothAgreementsSigned && app.startedAt && !app.finishedAt ? `
             <button onclick="handleFinishJob('${docSnap.id}')">Finish</button>
             <div style="margin-top:10px;">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('Job: ' + app.jobTitle + ' - Student: ' + app.studentName)}" alt="QR Code" style="border:1px solid #ccc;">
+              <img src="QR.jpg" alt="QR Code" style="border:1px solid #ccc;width:150px;height:150px;">
             </div>
           ` : ''}
           ${app.startedAt ? `<p style='color:#22c55e; background-color:#f0fdf4; padding:8px; border-radius:4px; margin:8px 0;'><strong>✅ Started at:</strong> ${app.startedAtFormatted || new Date(app.startedAt.seconds ? app.startedAt.seconds * 1000 : app.startedAt).toLocaleString()}</p>` : ''}

@@ -354,7 +354,7 @@
                             ${isAccepted && !isStarted && !isFinished ? `<button id='start-btn-${index}' style='background: #eab308; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Start</button>` : ''}
                             ${isAccepted && !isStarted && !isFinished ? `<button id='finished-btn-${index}' style='background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Finished</button>` : ''}
                             ${isStarted && !isFinished ? `<button id='finished-btn-${index}' style='background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;'>Finished</button>` : ''}
-                            ${isAccepted || isStarted ? `<span id="qr-code-${index}" style="margin-left: 10px; display:inline-block;"><a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a></span>` : `<span id="qr-code-${index}" style="margin-left: 10px; display:none;"></span>`}
+                            ${isAccepted || isStarted ? `<span id="qr-code-${index}" style="margin-left: 10px; display:inline-block;"><img src='QR.jpg' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:320px;height:320px;' /></span>` : `<span id="qr-code-${index}" style="margin-left: 10px; display:none;"></span>`}
                             ${!isAccepted && !isStarted && !isFinished ? `<button id="accept-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'accepted', '${app.studentId || ''}', ${index})" style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Accept</button>` : ''}
                             ${!isAccepted && !isStarted && !isFinished ? `<button id="reject-btn-${index}" onclick="window.handleApplicationAction && window.handleApplicationAction('${app.id}', 'rejected', '${app.studentId || ''}')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reject</button>` : ''}
                         </div>
@@ -380,7 +380,7 @@
                                 // Show QR code (persist and clickable)
                                 const qrSpan = document.getElementById(`qr-code-${index}`);
                                 if (qrSpan) {
-                                    qrSpan.innerHTML = `<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' rel='noopener'><img src='https://cdn.jsdelivr.net/gh/brave/brave-browser-assets@master/src/brave/components/app/static/images/brave-qr.png' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:80px;height:80px;' /></a>`;
+                                    qrSpan.innerHTML = `<img src='QR.jpg' alt='QR Code' style='display:inline-block;vertical-align:middle;margin-left:8px;border-radius:8px;width:190px;height:190px;' />`;
                                     qrSpan.style.display = 'inline-block';
                                 }
                                 // Show Start and Finished buttons

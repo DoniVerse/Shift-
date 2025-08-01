@@ -24,7 +24,6 @@
                     </div>
                 </div>
             </div>
->
         </button>
     </nav>
     <script type="module">
@@ -64,112 +63,88 @@
             const userDoc = await getDoc(doc(db, 'users', uid));
             return userDoc.exists() ? userDoc.data() : null;
         }
-        // Load all applications and group by employer/job
-        async function loadApplicationsOverview() {
-            const applicationsCol = collection(db, 'applications');
-            const snapshot = await getDocs(applicationsCol);
-            const applications = [];
-            snapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                applications.push({ id: docSnap.id, ...data });
-            });
-            // Group by employer and job
-            const employerMap = {};
-            for (const app of applications) {
-                if (!app.employerId) continue;
-                if (!employerMap[app.employerId]) employerMap[app.employerId] = { jobs: {}, employerInfo: null };
-                if (!employerMap[app.employerId].jobs[app.jobId]) employerMap[app.employerId].jobs[app.jobId] = { jobInfo: null, applications: [] };
-                employerMap[app.employerId].jobs[app.jobId].applications.push(app);
-            }
-            // Fetch employer, job, and student info
-            for (const employerId of Object.keys(employerMap)) {
-                employerMap[employerId].employerInfo = await getEmployerInfo(employerId);
-                for (const jobId of Object.keys(employerMap[employerId].jobs)) {
-                    employerMap[employerId].jobs[jobId].jobInfo = await getJobInfo(jobId);
-                    // Fetch student info for each application
-                    for (const app of employerMap[employerId].jobs[jobId].applications) {
-                        if (!app.studentName && app.studentId) {
-                            const studentInfo = await getStudentInfo(app.studentId);
-                            app.studentName = studentInfo ? (studentInfo.fullName || studentInfo.name || studentInfo.displayName || studentInfo.email || app.studentId) : app.studentId;
-                        }
-                    }
-                }
-            }
-            // Render
-            const container = document.getElementById('applications-overview');
-            if (!container) return;
-            let html = '';
-            for (const [employerId, employerData] of Object.entries(employerMap)) {
-                const employerName = employerData.employerInfo?.name || employerId;
-                const employerEmail = employerData.employerInfo?.email || '';
-                const employerDisplay = employerEmail ? `${employerName} (${employerEmail})` : employerName;
-                html += `<div style="margin-bottom:24px;"><h3 style="margin-bottom:8px;">Employer: ${employerDisplay}</h3>`;
-                for (const [jobId, jobData] of Object.entries(employerData.jobs)) {
-                    const jobTitle = jobData.jobInfo?.title || jobId;
-                    html += `<div style="margin-left:16px;margin-bottom:8px;"><strong>Job:</strong> ${jobTitle}<ul style="margin:8px 0 8px 24px;">`;
-                    for (const app of jobData.applications) {
-                        let startedAt = '';
-                        let finishedAt = '';
-                        let statusTime = '';
-                        // Helper to get correct JS Date from Firestore Timestamp or string
-                        function getDate(ts) {
-                            if (!ts) return '';
-                            if (typeof ts.toDate === 'function') return ts.toDate();
-                            if (ts.seconds) return new Date(ts.seconds * 1000);
-                            if (typeof ts === 'string' && !isNaN(Date.parse(ts))) return new Date(ts);
-                            return new Date(ts);
-                        }
-                        // Format date in local time (UTC+3) for consistency
-                        function formatDate(date) {
-                            if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
-                            // Convert to UTC+3 (local time)
-                            const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
-                            const localTime = new Date(utcTime + (3 * 3600000)); // UTC+3
-                            return localTime.toLocaleString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit',
-                                hour12: true
-                            });
-                        }
-                        // Show status timestamp
-                        if (app.statusUpdatedAt) {
-                            const statusDate = getDate(app.statusUpdatedAt);
-                            statusTime = ` <span style='color:#888;font-size:13px;'>(at ${formatDate(statusDate)})</span>`;
-                        } else if (app.updatedAt) {
-                            const statusDate = getDate(app.updatedAt);
-                            statusTime = ` <span style='color:#888;font-size:13px;'>(at ${formatDate(statusDate)})</span>`;
-                        } else if (app.createdAt) {
-                            const statusDate = getDate(app.createdAt);
-                            statusTime = ` <span style='color:#888;font-size:13px;'>(at ${formatDate(statusDate)})</span>`;
-                        }
-                        if (app.startedAt) {
-                            // Prioritize formatted timestamp from database, fallback to formatted date
-                            const startedDisplay = app.startedAtFormatted || formatDate(getDate(app.startedAt));
-                            startedAt = ` | <strong style='color:#22c55e;'>✅ Started:</strong> <span style='background-color:#f0fdf4; padding:2px 6px; border-radius:3px;'>${startedDisplay}</span>`;
-                        }
-                        if (app.finishedAt) {
-                            // Prioritize formatted timestamp from database, fallback to formatted date
-                            const finishedDisplay = app.finishedAtFormatted || formatDate(getDate(app.finishedAt));
-                            finishedAt = ` | <strong style='color:#dc2626;'>🏁 Finished:</strong> <span style='background-color:#fef2f2; padding:2px 6px; border-radius:3px;'>${finishedDisplay}</span>`;
-                        }
-                        // Display student name and email
-                        const studentName = app.studentName || app.studentId || 'Unknown';
-                        const studentEmail = app.studentEmail || '';
-                        const studentDisplay = studentEmail ? `${studentName} (${studentEmail})` : studentName;
-                        html += `<li><strong>Student:</strong> ${studentDisplay} | <strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'#dc2626':'#eab308'};font-weight:bold;">${app.status || 'pending'}</span>${statusTime}${startedAt}${finishedAt}</li>`;
-                    }
-                    html += '</ul></div>';
-                }
-                html += '</div>';
-            }
-            if (!html) html = '<p>No applications found.</p>';
-            container.innerHTML = html;
+        // Helper functions for date formatting
+        function getDate(timestamp) {
+            if (!timestamp) return new Date();
+            if (timestamp.toDate) return timestamp.toDate();
+            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+            return new Date(timestamp);
         }
-        document.addEventListener('DOMContentLoaded', loadApplicationsOverview);
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        // Load all applications - SIMPLIFIED VERSION
+        async function loadApplicationsOverview() {
+            try {
+                console.log('🔄 Starting to load applications...');
+                const container = document.getElementById('applications-overview');
+                if (!container) return;
+                
+                container.innerHTML = '<p>Fetching applications...</p>';
+                
+                const applicationsCol = collection(db, 'applications');
+                const snapshot = await getDocs(applicationsCol);
+                
+                console.log(`📊 Found ${snapshot.size} applications`);
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<p>No applications found.</p>';
+                    return;
+                }
+                
+                let html = '<h3>� Applications Overview</h3>';
+                
+                snapshot.forEach((docSnap) => {
+                    const app = { id: docSnap.id, ...docSnap.data() };
+                    
+                    html += `<div style="border:1px solid #ddd;padding:15px;margin:10px 0;border-radius:8px;background:#f9f9f9;">`;
+                    html += `<h4>Application ID: ${app.id}</h4>`;
+                    html += `<p><strong>Student:</strong> ${app.studentName || app.studentId || 'Unknown'}</p>`;
+                    html += `<p><strong>Student Email:</strong> ${app.studentEmail || 'N/A'}</p>`;
+                    html += `<p><strong>Job Title:</strong> ${app.jobTitle || 'N/A'}</p>`;
+                    html += `<p><strong>Employer ID:</strong> ${app.employerId || 'N/A'}</p>`;
+                    html += `<p><strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'red':'orange'};font-weight:bold;">${app.status || 'pending'}</span></p>`;
+                    
+                    if (app.studentAgreementSigned) html += `<p><strong>Student Agreement:</strong> ✅ Signed</p>`;
+                    if (app.employerAgreementSigned) html += `<p><strong>Employer Agreement:</strong> ✅ Signed</p>`;
+                    if (app.startedAt) html += `<p><strong>Started:</strong> ✅ Yes</p>`;
+                    if (app.finishedAt) html += `<p><strong>Finished:</strong> ✅ Yes</p>`;
+                    
+                    html += `</div>`;
+                });
+                
+                container.innerHTML = html;
+                console.log('✅ Applications loaded successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading applications:', error);
+                const container = document.getElementById('applications-overview');
+                if (container) {
+                    container.innerHTML = `<p style="color:#dc2626;">Error: ${error.message}<br>Check console for details.</p>`;
+                }
+            }
+        }
+
+        // Simple initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Admin dashboard initializing...');
+            
+            // Check admin access
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (user.userType !== 'admin') {
+                alert('Access denied. Only admins can access this page.');
+                window.location.href = 'admin-signin.html';
+                return;
+            }
+            
+            // Load applications with timeout
+            setTimeout(() => {
+                loadApplicationsOverview();
+            }, 1000);
+        });
         // Block access for non-admins
         document.addEventListener('DOMContentLoaded', function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
