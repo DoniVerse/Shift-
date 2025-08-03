@@ -244,6 +244,66 @@ class JobManager {
             return [];
         }
     }
+
+    // Update application status and timestamps
+    async updateApplicationStatus(applicationId, status, timestamp = null) {
+        try {
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const appRef = doc(this.db, this.applicationsCollection, applicationId);
+            
+            const updateData = {
+                status: status,
+                updatedAt: serverTimestamp()
+            };
+
+            // Add timestamp based on status
+            if (status === 'started' && !timestamp) {
+                updateData.startedAt = serverTimestamp();
+            } else if (status === 'finished' && !timestamp) {
+                updateData.finishedAt = serverTimestamp();
+            } else if (timestamp) {
+                updateData[status === 'started' ? 'startedAt' : 'finishedAt'] = timestamp;
+            }
+
+            await updateDoc(appRef, updateData);
+            
+            return {
+                success: true,
+                message: `Application status updated to ${status}`
+            };
+        } catch (error) {
+            console.error('Error updating application status:', error.message);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Get all applications for admin dashboard
+    async getAllApplications() {
+        try {
+            const q = query(
+                collection(this.db, this.applicationsCollection),
+                orderBy('createdAt', 'desc')
+            );
+
+            const querySnapshot = await getDocs(q);
+            const applications = [];
+            
+            querySnapshot.forEach((doc) => {
+                applications.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            return applications;
+        } catch (error) {
+            console.error('Error fetching all applications:', error.message);
+            return [];
+        }
+    }
 }
 
 // Create global instance

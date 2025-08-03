@@ -14,7 +14,10 @@
                     <div class="logo">A</div>
                 </div>
                 <h1 class="page-title" style="margin:0;">Admin Dashboard</h1>
-                <button id="admin-logout-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">Logout</button>
+                <div style="display:flex;gap:10px;">
+                    <button id="refresh-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">🔄 Refresh</button>
+                    <button id="admin-logout-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">Logout</button>
+                </div>
             </div>
             <div class="content" style="display:flex;gap:40px;flex-wrap:wrap;">
                 <div style="flex:2;min-width:320px;">
@@ -60,8 +63,13 @@
         // Helper to get student info
         async function getStudentInfo(uid) {
             if (!uid) return null;
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            return userDoc.exists() ? userDoc.data() : null;
+            try {
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                return userDoc.exists() ? userDoc.data() : null;
+            } catch (error) {
+                console.error('Error fetching student info:', error);
+                return null;
+            }
         }
         // Helper functions for date formatting
         function getDate(timestamp) {
@@ -76,7 +84,7 @@
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         }
 
-        // Load all applications - SIMPLIFIED VERSION
+        // Load all applications using JobManager
         async function loadApplicationsOverview() {
             try {
                 console.log('🔄 Starting to load applications...');
@@ -85,12 +93,19 @@
                 
                 container.innerHTML = '<p>Fetching applications...</p>';
                 
-                const applicationsCol = collection(db, 'applications');
-                const snapshot = await getDocs(applicationsCol);
+                // Use JobManager if available, otherwise fallback to direct Firestore
+                let applications = [];
+                if (window.jobManager) {
+                    applications = await window.jobManager.getAllApplications();
+                } else {
+                    const applicationsCol = collection(db, 'applications');
+                    const snapshot = await getDocs(applicationsCol);
+                    applications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
                 
-                console.log(`📊 Found ${snapshot.size} applications`);
+                console.log(`📊 Found ${applications.length} applications`);
                 
-                if (snapshot.empty) {
+                if (applications.length === 0) {
                     container.innerHTML = '<p>No applications found.</p>';
                     return;
                 }
@@ -107,22 +122,32 @@
                         app.employerId ? getEmployerInfo(app.employerId) : null
                     ]);
 
-                    // Improved job status logic
-        // Status: accepted/rejected/pending (never 'started' or 'finished')
-        let statusText = 'Pending';
-        let statusColor = 'orange';
-        if (app.status === 'accepted' || app.status === 'started' || app.status === 'finished') {
-            statusText = 'Accepted';
-            statusColor = 'green';
-        } else if (app.status === 'rejected') {
-            statusText = 'Rejected';
-            statusColor = 'red';
-        }
+                    // Improved job status logic with proper status display
+                    let statusText = app.status || 'Pending';
+                    let statusColor = 'orange';
+                    
+                    if (app.status === 'accepted') {
+                        statusText = 'Accepted';
+                        statusColor = 'green';
+                    } else if (app.status === 'started') {
+                        statusText = 'Started';
+                        statusColor = 'blue';
+                    } else if (app.status === 'finished') {
+                        statusText = 'Finished';
+                        statusColor = 'purple';
+                    } else if (app.status === 'rejected') {
+                        statusText = 'Rejected';
+                        statusColor = 'red';
+                    }
 
-                    // Student ID image
+                    // Student ID image - try multiple possible field names
                     let studentIdImg = '';
-                    if (studentInfo?.studentIdImageUrl) {
-                        studentIdImg = `<div style="margin-top:8px;"><img src="${studentInfo.studentIdImageUrl}" alt="Student ID" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;" /></div>`;
+                    const studentIdUrl = studentInfo?.studentIdImageUrl || studentInfo?.studentIdImage || app.studentIdImageUrl;
+                    if (studentIdUrl) {
+                        studentIdImg = `<div style="margin-top:8px;"><img src="${studentIdUrl}" alt="Student ID" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;" /></div>`;
+                    } else {
+                        // Show placeholder if no image
+                        studentIdImg = `<div style="margin-top:8px;width:90px;height:60px;display:flex;align-items:center;justify-content:center;background:#eee;border-radius:6px;border:1px solid #ccc;font-size:0.8rem;color:#888;">No ID Image</div>`;
                     }
 
                     let studentBlock = `<div><strong>Student:</strong> ${studentInfo?.name || app.studentName || app.studentId || 'Unknown'}<br>
@@ -148,12 +173,12 @@
                     </div>`;
 
 
-        // Timer: show started/finished times for accepted jobs if present
+        // Timer: show started/finished times for jobs that have been started or finished
         let jobTimes = '';
-        if ((app.status === 'accepted' || app.status === 'started' || app.status === 'finished') && app.startedAt) {
+        if (app.startedAt) {
             jobTimes += `<div><strong>Started:</strong> ${formatDate(getDate(app.startedAt))}</div>`;
         }
-        if ((app.status === 'accepted' || app.status === 'started' || app.status === 'finished') && app.finishedAt) {
+        if (app.finishedAt) {
             jobTimes += `<div><strong>Finished:</strong> ${formatDate(getDate(app.finishedAt))}</div>`;
         }
 
@@ -182,8 +207,7 @@
 
                 // Render all applications with details
                 const appList = [];
-                for (const docSnap of snapshot.docs) {
-                    const app = { id: docSnap.id, ...docSnap.data() };
+                for (const app of applications) {
                     appList.push(renderApplication(app));
                 }
                 // Wait for all async blocks
@@ -226,6 +250,12 @@
                 window.location.href = 'admin-signin.html';
             }
         });
+        // Refresh button logic
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            console.log('🔄 Refreshing applications data...');
+            loadApplicationsOverview();
+        });
+
         // Logout logic for admin
         document.getElementById('admin-logout-btn').addEventListener('click', function() {
             if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {

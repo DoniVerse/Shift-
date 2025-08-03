@@ -61,10 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // After successful signup (handled by firebase-auth.js), update Firestore profile
-        // Save studentIdImageUrl to Firestore user profile as soon as user is available
-        async function saveStudentIdImageUrl() {
-            const user = auth.currentUser;
+        // Wait for user to be created and signed in
+        auth.onAuthStateChanged(async (user) => {
             if (user && studentIdImageUrl) {
+                // Save studentIdImageUrl to Firestore user profile
                 const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDocSnap = await getDoc(userDocRef);
@@ -74,21 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
                 }
             }
-        }
-        // Try immediately, then fallback to wait for user creation
-        await saveStudentIdImageUrl();
-        if (!auth.currentUser) {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) await saveStudentIdImageUrl();
-            });
-        }
+        });
     });
 
     // Google sign up button
     document.querySelector('.google-btn').addEventListener('click', function() {
         // Implement Google OAuth here
         console.log('Google sign up clicked');
-
+        alert('Google sign up functionality would be implemented here.');
     });
 
     // LinkedIn URL validation
