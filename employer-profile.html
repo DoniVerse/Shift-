@@ -528,9 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (user) {
           renderEmployerApplications(el, user.uid);
-        } else {
-          el.innerHTML = '<p>Please log in as an employer to view applications.</p>';
-        }
+        } 
       }
       if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
         window.firebaseAuth.onAuthStateChange(() => {
