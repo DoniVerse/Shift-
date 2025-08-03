@@ -120,7 +120,23 @@
               const notif = doc.data();
               const notifId = doc.id;
               
-              if (notif.status === 'accepted' && notif.requiresAgreement) {
+              if (notif.type === 'job_ready_to_start') {
+                html += `
+                    <div style="border:3px solid #10b981; background:#ecfdf5; padding:20px; margin-bottom:15px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="display:flex;align-items:center;margin-bottom:10px;">
+                            <span style="font-size:24px;margin-right:10px;">🎉</span>
+                            <strong style="color:#059669; font-size:18px;">JOB READY TO START!</strong>
+                        </div>
+                        <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
+                        <div><strong>Employer:</strong> ${notif.employerName || ''}</div>
+                        <div><strong>Message:</strong> ${notif.message || ''}</div>
+                        <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
+                        <div style="margin-top:15px; padding:15px; background:#d1fae5; border-radius:6px; border-left:4px solid #10b981;">
+                            <p style="margin:0; color:#065f46; font-weight:bold;">✅ Both agreements have been signed! You can now begin your job. Please coordinate with your employer for the start time.</p>
+                        </div>
+                    </div>
+                `;
+              } else if (notif.status === 'accepted' && notif.requiresAgreement) {
                 html += `
                     <div style="border:2px solid #22c55e; background:#d4edda; padding:15px; margin-bottom:15px; border-radius:8px;">
                         <div><strong>Status:</strong> <span style="color:#22c55e; font-weight:bold;">ACCEPTED by ${notif.employerName || 'Company'}</span></div>
@@ -146,7 +162,7 @@
               } else {
                 html += `
                     <div style="border:1px solid #d1d5db; background:#f9fafb; padding:15px; margin-bottom:15px; border-radius:8px;">
-                        <div><strong>Status:</strong> <span style="color:${notif.status === 'rejected' ? '#dc2626' : '#64748b'}">${notif.status}</span></div>
+                        <div><strong>Status:</strong> <span style="color:${notif.status === 'rejected' ? '#dc2626' : '#64748b'}">${notif.status || notif.type || 'notification'}</span></div>
                         <div><strong>Job:</strong> ${notif.jobTitle || ''}</div>
                         <div><strong>Message:</strong> ${notif.message || ''}</div>
                         <div style="font-size:0.9em;color:#64748b;">${notif.timestamp && notif.timestamp.toDate ? notif.timestamp.toDate().toLocaleString() : ''}</div>
