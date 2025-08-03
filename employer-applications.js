@@ -2,6 +2,28 @@
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+// Helper function to format timestamps
+function formatTimestamp(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    let date;
+    if (timestamp.toDate) {
+        // Firestore timestamp
+        date = timestamp.toDate();
+    } else if (timestamp.seconds) {
+        // Firestore timestamp as object
+        date = new Date(timestamp.seconds * 1000);
+    } else if (typeof timestamp === 'string') {
+        // ISO string
+        date = new Date(timestamp);
+    } else {
+        // Date object or other
+        date = new Date(timestamp);
+    }
+    
+    return date.toLocaleString();
+}
+
 // Add job start/finish handlers to update Firestore
 window.handleStartJob = async function(appId) {
   const db = window.firebaseFirestore;
@@ -9,7 +31,12 @@ window.handleStartJob = async function(appId) {
   if (!confirm('Start this job?')) return;
   try {
     const appRef = doc(db, 'applications', appId);
-    await updateDoc(appRef, { startedAt: new Date().toISOString(), status: 'started' });
+    const timestamp = new Date().toISOString();
+    await updateDoc(appRef, { 
+      startedAt: timestamp, 
+      status: 'started',
+      updatedAt: new Date()
+    });
     alert('Job started!');
     if (typeof loadEmployerApplications === 'function') {
       loadEmployerApplications(window.firebaseAuth.currentUser.uid);
@@ -27,7 +54,12 @@ window.handleFinishJob = async function(appId) {
   if (!confirm('Finish this job?')) return;
   try {
     const appRef = doc(db, 'applications', appId);
-    await updateDoc(appRef, { finishedAt: new Date().toISOString(), status: 'finished' });
+    const timestamp = new Date().toISOString();
+    await updateDoc(appRef, { 
+      finishedAt: timestamp, 
+      status: 'finished',
+      updatedAt: new Date()
+    });
     alert('Job finished!');
     if (typeof loadEmployerApplications === 'function') {
       loadEmployerApplications(window.firebaseAuth.currentUser.uid);
@@ -112,8 +144,8 @@ async function loadEmployerApplications(employerUid) {
               <img src="QR.jpg" alt="QR Code" style="border:1px solid #ccc;width:150px;height:150px;">
             </div>
           ` : ''}
-          ${app.startedAt ? `<p style='color:#22c55e; background-color:#f0fdf4; padding:8px; border-radius:4px; margin:8px 0;'><strong>✅ Started at:</strong> ${app.startedAtFormatted || new Date(app.startedAt.seconds ? app.startedAt.seconds * 1000 : app.startedAt).toLocaleString()}</p>` : ''}
-          ${app.finishedAt ? `<p style='color:#dc2626; background-color:#fef2f2; padding:8px; border-radius:4px; margin:8px 0;'><strong>🏁 Finished at:</strong> ${app.finishedAtFormatted || new Date(app.finishedAt.seconds ? app.finishedAt.seconds * 1000 : app.finishedAt).toLocaleString()}</p>` : ''}
+          ${app.startedAt ? `<p style='color:#22c55e; background-color:#f0fdf4; padding:8px; border-radius:4px; margin:8px 0;'><strong>✅ Started at:</strong> ${formatTimestamp(app.startedAt)}</p>` : ''}
+          ${app.finishedAt ? `<p style='color:#dc2626; background-color:#fef2f2; padding:8px; border-radius:4px; margin:8px 0;'><strong>🏁 Finished at:</strong> ${formatTimestamp(app.finishedAt)}</p>` : ''}
         </div>
       `;
     });

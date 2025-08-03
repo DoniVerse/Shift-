@@ -182,6 +182,22 @@ class JobManager {
     // Submit job application
     async submitApplication(applicationData) {
         try {
+            // Get student ID image URL from user profile if available
+            let studentIdImageUrl = '';
+            if (applicationData.studentId) {
+                try {
+                    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                    const userDoc = await getDoc(doc(this.db, 'users', applicationData.studentId));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        studentIdImageUrl = userData.studentIdImageUrl || '';
+                        console.log('📸 Found student ID image URL:', studentIdImageUrl);
+                    }
+                } catch (error) {
+                    console.error('Error fetching student ID image:', error);
+                }
+            }
+
             const appDoc = {
                 jobId: applicationData.jobId,
                 jobTitle: applicationData.jobTitle,
@@ -195,6 +211,7 @@ class JobManager {
                 studentUniversity: applicationData.studentUniversity,
                 studentDepartment: applicationData.studentDepartment,
                 studentId: applicationData.studentId,
+                studentIdImageUrl: studentIdImageUrl, // Include student ID image URL
                 status: 'applied',
                 createdAt: serverTimestamp()
             };

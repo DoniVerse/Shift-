@@ -55,33 +55,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storageRef = ref(storage, 'student_ids/' + Date.now() + '_' + studentIdFile.name);
                 await uploadBytes(storageRef, studentIdFile);
                 studentIdImageUrl = await getDownloadURL(storageRef);
+                console.log('✅ Student ID image uploaded successfully:', studentIdImageUrl);
+                
+                // Store the URL temporarily in case user isn't signed in yet
+                localStorage.setItem('tempStudentIdImageUrl', studentIdImageUrl);
             } catch (err) {
                 console.error('Error uploading student ID image:', err);
             }
         }
 
         // After successful signup (handled by firebase-auth.js), update Firestore profile
-        // Save studentIdImageUrl to Firestore user profile as soon as user is available
-        async function saveStudentIdImageUrl() {
-            const user = auth.currentUser;
+        // Wait for user to be created and signed in
+        auth.onAuthStateChanged(async (user) => {
             if (user && studentIdImageUrl) {
-                const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                    await updateDoc(userDocRef, { studentIdImageUrl });
-                } else {
-                    await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
+                try {
+                    // Save studentIdImageUrl to Firestore user profile
+                    const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        await updateDoc(userDocRef, { studentIdImageUrl });
+                        console.log('✅ Student ID image URL saved to existing user profile');
+                    } else {
+                        await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
+                        console.log('✅ Student ID image URL saved to new user profile');
+                    }
+                } catch (error) {
+                    console.error('❌ Error saving student ID image URL:', error);
                 }
             }
-        }
-        // Try immediately, then fallback to wait for user creation
-        await saveStudentIdImageUrl();
-        if (!auth.currentUser) {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) await saveStudentIdImageUrl();
-            });
-        }
+        });
     });
 
     // Google sign up button

@@ -14,7 +14,10 @@
                     <div class="logo">A</div>
                 </div>
                 <h1 class="page-title" style="margin:0;">Admin Dashboard</h1>
-                <button id="admin-logout-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">Logout</button>
+                <div style="display:flex;gap:10px;">
+                    <button id="refresh-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">🔄 Refresh</button>
+                    <button id="admin-logout-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:1rem;cursor:pointer;">Logout</button>
+                </div>
             </div>
             <div class="content" style="display:flex;gap:40px;flex-wrap:wrap;">
                 <div style="flex:2;min-width:320px;">
@@ -60,8 +63,16 @@
         // Helper to get student info
         async function getStudentInfo(uid) {
             if (!uid) return null;
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            return userDoc.exists() ? userDoc.data() : null;
+            try {
+                console.log('🔍 Fetching student info for UID:', uid);
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                const userData = userDoc.exists() ? userDoc.data() : null;
+                console.log('📋 Student data found:', userData);
+                return userData;
+            } catch (error) {
+                console.error('Error fetching student info:', error);
+                return null;
+            }
         }
         // Helper functions for date formatting
         function getDate(timestamp) {
@@ -119,10 +130,23 @@
             statusColor = 'red';
         }
 
-                    // Student ID image
+                    // Student ID image - check multiple sources with better debugging
                     let studentIdImg = '';
-                    if (studentInfo?.studentIdImageUrl) {
-                        studentIdImg = `<div style="margin-top:8px;"><img src="${studentInfo.studentIdImageUrl}" alt="Student ID" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;" /></div>`;
+                    const studentIdUrl = studentInfo?.studentIdImageUrl || app.studentIdImageUrl;
+                    console.log('🖼️ Looking for student ID image:', {
+                        studentId: app.studentId,
+                        studentInfo: studentInfo,
+                        studentIdImageUrl: studentInfo?.studentIdImageUrl,
+                        appStudentIdImageUrl: app.studentIdImageUrl,
+                        finalUrl: studentIdUrl,
+                        hasStudentInfo: !!studentInfo
+                    });
+                    
+                    if (studentIdUrl) {
+                        studentIdImg = `<div style="margin-top:8px;"><img src="${studentIdUrl}" alt="Student ID" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div style="display:none;width:90px;height:60px;align-items:center;justify-content:center;background:#eee;border-radius:6px;border:1px solid #ccc;font-size:0.8rem;color:#888;">Image Error</div></div>`;
+                    } else {
+                        // Show placeholder if no image
+                        studentIdImg = `<div style="margin-top:8px;width:90px;height:60px;display:flex;align-items:center;justify-content:center;background:#eee;border-radius:6px;border:1px solid #ccc;font-size:0.8rem;color:#888;">No ID Image</div>`;
                     }
 
                     let studentBlock = `<div><strong>Student:</strong> ${studentInfo?.name || app.studentName || app.studentId || 'Unknown'}<br>
@@ -201,6 +225,35 @@
             }
         }
 
+        // Function to update applications with missing student ID image URLs
+        async function updateApplicationsWithStudentIdImages() {
+            try {
+                console.log('🔄 Updating applications with student ID images...');
+                const applicationsCol = collection(db, 'applications');
+                const snapshot = await getDocs(applicationsCol);
+                
+                let updatedCount = 0;
+                for (const docSnap of snapshot.docs) {
+                    const app = docSnap.data();
+                    if (app.studentId && !app.studentIdImageUrl) {
+                        // Try to get student ID image URL from user profile
+                        const studentInfo = await getStudentInfo(app.studentId);
+                        if (studentInfo?.studentIdImageUrl) {
+                            const { updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                            await updateDoc(doc(db, 'applications', docSnap.id), {
+                                studentIdImageUrl: studentInfo.studentIdImageUrl
+                            });
+                            updatedCount++;
+                            console.log(`✅ Updated application ${docSnap.id} with student ID image`);
+                        }
+                    }
+                }
+                console.log(`✅ Updated ${updatedCount} applications with student ID images`);
+            } catch (error) {
+                console.error('❌ Error updating applications:', error);
+            }
+        }
+
         // Simple initialization
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Admin dashboard initializing...');
@@ -216,6 +269,8 @@
             // Load applications with timeout
             setTimeout(() => {
                 loadApplicationsOverview();
+                // Also try to update existing applications with student ID images
+                updateApplicationsWithStudentIdImages();
             }, 1000);
         });
         // Block access for non-admins
@@ -226,6 +281,13 @@
                 window.location.href = 'admin-signin.html';
             }
         });
+        // Refresh button logic
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            console.log('🔄 Refreshing applications data...');
+            loadApplicationsOverview();
+            updateApplicationsWithStudentIdImages();
+        });
+
         // Logout logic for admin
         document.getElementById('admin-logout-btn').addEventListener('click', function() {
             if (window.firebaseAuth && typeof window.firebaseAuth.signOutUser === 'function') {
