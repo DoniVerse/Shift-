@@ -95,27 +95,67 @@
                     return;
                 }
                 
-                let html = '<h3>� Applications Overview</h3>';
-                
-                snapshot.forEach((docSnap) => {
+
+                let html = '<h3>📋 Applications Overview</h3>';
+
+                // Helper to fetch and render details for each application
+                async function renderApplication(app) {
+                    // Fetch job, student, and employer info
+                    const [jobInfo, studentInfo, employerInfo] = await Promise.all([
+                        app.jobId ? getJobInfo(app.jobId) : null,
+                        app.studentId ? getStudentInfo(app.studentId) : null,
+                        app.employerId ? getEmployerInfo(app.employerId) : null
+                    ]);
+
+                    let jobStatus = 'Pending';
+                    if (app.startedAt && !app.finishedAt) jobStatus = 'Started';
+                    if (app.finishedAt) jobStatus = 'Finished';
+                    if (app.status === 'accepted') jobStatus = 'Accepted';
+                    if (app.status === 'rejected') jobStatus = 'Rejected';
+
+                    let studentBlock = `<div><strong>Student:</strong> ${studentInfo?.name || app.studentName || app.studentId || 'Unknown'}<br>
+                        <strong>Email:</strong> ${studentInfo?.email || app.studentEmail || 'N/A'}<br>
+                        <strong>ID:</strong> ${app.studentId || studentInfo?.studentId || 'N/A'}</div>`;
+
+                    let employerBlock = `<div><strong>Employer:</strong> ${employerInfo?.companyName || employerInfo?.name || app.employerId || 'Unknown'}<br>
+                        <strong>Email:</strong> ${employerInfo?.email || 'N/A'}<br>
+                        <strong>ID:</strong> ${app.employerId || 'N/A'}</div>`;
+
+                    let jobBlock = `<div><strong>Job:</strong> ${jobInfo?.title || app.jobTitle || 'N/A'}<br>
+                        <strong>Job ID:</strong> ${app.jobId || 'N/A'}<br>
+                        <strong>Status:</strong> <span style="color:${jobStatus==='Finished'?'green':jobStatus==='Rejected'?'red':'orange'};font-weight:bold;">${jobStatus}</span></div>`;
+
+                    let agreements = '';
+                    if (app.studentAgreementSigned) agreements += `<span>Student Agreement: ✅ Signed</span><br>`;
+                    if (app.employerAgreementSigned) agreements += `<span>Employer Agreement: ✅ Signed</span><br>`;
+
+                    let started = app.startedAt ? `<span>Started: ${formatDate(getDate(app.startedAt))}</span><br>` : '';
+                    let finished = app.finishedAt ? `<span>Finished: ${formatDate(getDate(app.finishedAt))}</span><br>` : '';
+
+                    return `<div style="border:1px solid #ddd;padding:15px;margin:10px 0;border-radius:8px;background:#f9f9f9;">
+                        <h4>Application ID: ${app.id}</h4>
+                        <div style="display:flex;gap:30px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:180px;">${studentBlock}</div>
+                            <div style="flex:1;min-width:180px;">${employerBlock}</div>
+                            <div style="flex:1;min-width:180px;">${jobBlock}</div>
+                        </div>
+                        <div style="margin-top:10px;font-size:0.95em;color:#555;">
+                            ${agreements}
+                            ${started}
+                            ${finished}
+                        </div>
+                    </div>`;
+                }
+
+                // Render all applications with details
+                const appList = [];
+                for (const docSnap of snapshot.docs) {
                     const app = { id: docSnap.id, ...docSnap.data() };
-                    
-                    html += `<div style="border:1px solid #ddd;padding:15px;margin:10px 0;border-radius:8px;background:#f9f9f9;">`;
-                    html += `<h4>Application ID: ${app.id}</h4>`;
-                    html += `<p><strong>Student:</strong> ${app.studentName || app.studentId || 'Unknown'}</p>`;
-                    html += `<p><strong>Student Email:</strong> ${app.studentEmail || 'N/A'}</p>`;
-                    html += `<p><strong>Job Title:</strong> ${app.jobTitle || 'N/A'}</p>`;
-                    html += `<p><strong>Employer ID:</strong> ${app.employerId || 'N/A'}</p>`;
-                    html += `<p><strong>Status:</strong> <span style="color:${app.status==='accepted'?'green':app.status==='rejected'?'red':'orange'};font-weight:bold;">${app.status || 'pending'}</span></p>`;
-                    
-                    if (app.studentAgreementSigned) html += `<p><strong>Student Agreement:</strong> ✅ Signed</p>`;
-                    if (app.employerAgreementSigned) html += `<p><strong>Employer Agreement:</strong> ✅ Signed</p>`;
-                    if (app.startedAt) html += `<p><strong>Started:</strong> ✅ Yes</p>`;
-                    if (app.finishedAt) html += `<p><strong>Finished:</strong> ✅ Yes</p>`;
-                    
-                    html += `</div>`;
-                });
-                
+                    appList.push(renderApplication(app));
+                }
+                // Wait for all async blocks
+                const allHtml = await Promise.all(appList);
+                html += allHtml.join('');
                 container.innerHTML = html;
                 console.log('✅ Applications loaded successfully');
                 
