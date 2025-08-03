@@ -1,7 +1,43 @@
 // employer-applications.js
-import { collection, query, where, getDocs, doc, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+// Add job start/finish handlers to update Firestore
+window.handleStartJob = async function(appId) {
+  const db = window.firebaseFirestore;
+  if (!db) return alert('Firestore not available.');
+  if (!confirm('Start this job?')) return;
+  try {
+    const appRef = doc(db, 'applications', appId);
+    await updateDoc(appRef, { startedAt: new Date().toISOString(), status: 'started' });
+    alert('Job started!');
+    if (typeof loadEmployerApplications === 'function') {
+      loadEmployerApplications(window.firebaseAuth.currentUser.uid);
+    } else {
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Error updating application: ' + err.message);
+  }
+};
+
+window.handleFinishJob = async function(appId) {
+  const db = window.firebaseFirestore;
+  if (!db) return alert('Firestore not available.');
+  if (!confirm('Finish this job?')) return;
+  try {
+    const appRef = doc(db, 'applications', appId);
+    await updateDoc(appRef, { finishedAt: new Date().toISOString(), status: 'finished' });
+    alert('Job finished!');
+    if (typeof loadEmployerApplications === 'function') {
+      loadEmployerApplications(window.firebaseAuth.currentUser.uid);
+    } else {
+      window.location.reload();
+    }
+  } catch (err) {
+    alert('Error updating application: ' + err.message);
+  }
+};
 
   // Wait for Firebase Auth to be ready
   if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
