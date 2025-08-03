@@ -120,7 +120,7 @@
             if (confirm('Are you sure you want to clear all jobs?')) {
                 localStorage.removeItem('jobs');
                 loadJobs();
-                alert('All jobs cleared!');
+
             }
         }
         
@@ -129,7 +129,7 @@
             jobs.splice(index, 1);
             localStorage.setItem('jobs', JSON.stringify(jobs));
             loadJobs();
-            alert('Job deleted!');
+
         }
         
         function addTestJob() {
@@ -149,7 +149,7 @@
             jobs.push(testJob);
             localStorage.setItem('jobs', JSON.stringify(jobs));
             loadJobs();
-            alert('Test job added!');
+
         }
 
         function showUserInfo() {
@@ -216,7 +216,7 @@
             localStorage.setItem('currentUser', JSON.stringify(employerData));
             localStorage.setItem('employerInfo', JSON.stringify(employerData));
 
-            alert('✅ Employer login simulated!');
+
             updateStatus();
         }
 
@@ -225,7 +225,7 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
             if (!employerInfo.name && !currentUser.name) {
-                alert('❌ No employer logged in! Click "Simulate Employer Login" first.');
+
                 return;
             }
 
@@ -274,9 +274,9 @@
             }
 
             if (result.success) {
-                alert(`✅ Test job published!\nJob ID: ${result.jobId}\nCategory: ${selectedCategory.id}\nTitle: ${selectedCategory.title}\nEmployer: ${employer.name}\nEmail: ${employer.email}\n\nNow test in student view!`);
+
             } else {
-                alert(`❌ Failed to publish test job: ${result.error}`);
+
             }
 
             loadJobs();

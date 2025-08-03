@@ -145,11 +145,11 @@
                 
                 if (source === 'signup') {
                     // Handle signup flow
-                    alert(`Account created successfully!\nWelcome ${mockUserInfo.name}!\nEmail: ${mockUserInfo.email}`);
+
                     window.location.href = 'employer-signin.html';
                 } else {
                     // Handle signin flow
-                    alert(`Welcome back ${mockUserInfo.name}!\nSigned in with: ${mockUserInfo.email}`);
+
                     // Redirect to dashboard or main application
                     window.location.href = 'employer-signin.html'; // Replace with actual dashboard
                 }
@@ -193,10 +193,10 @@
                     localStorage.setItem('userInfo', JSON.stringify(data.user));
                     
                     if (source === 'signup') {
-                        alert(`Account created successfully!\nWelcome ${data.user.name}!`);
+
                         window.location.href = 'employer-signin.html';
                     } else {
-                        alert(`Welcome back ${data.user.name}!`);
+
                         window.location.href = 'dashboard.html';
                     }
                 } else {

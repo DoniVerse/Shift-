@@ -108,7 +108,6 @@ class FirebaseAuthManager {
         // Check terms agreement
         const termsCheckbox = document.getElementById('terms-agreement');
         if (!termsCheckbox || !termsCheckbox.checked) {
-            alert('You must read and agree to the Ethical Code of Conduct before signing up.');
             return;
         }
 
@@ -130,7 +129,6 @@ class FirebaseAuthManager {
             await this.registerUser(userData);
         } catch (error) {
             console.error('Student signup error:', error);
-            alert('Signup failed: ' + error.message);
         }
     }
 
@@ -141,14 +139,12 @@ class FirebaseAuthManager {
         // Check terms agreement
         const termsCheckbox = document.getElementById('terms-agreement');
         if (!termsCheckbox || !termsCheckbox.checked) {
-            alert('You must read and agree to the Ethical Code of Conduct before signing up.');
             return;
         }
 
         const logoDataUrl = window.logoDataUrl || '';
 
         if (!logoDataUrl) {
-            alert('Please upload your company logo before signing up.');
             return;
         }
 
@@ -171,7 +167,6 @@ class FirebaseAuthManager {
             await this.registerUser(userData);
         } catch (error) {
             console.error('Employer signup error:', error);
-            alert('Signup failed: ' + error.message);
         }
     }
 
@@ -188,7 +183,6 @@ class FirebaseAuthManager {
             await this.loginUser(email, password);
         } catch (error) {
             console.error('Student login error:', error);
-            alert('Login failed: ' + error.message);
         }
     }
 
@@ -203,7 +197,6 @@ class FirebaseAuthManager {
             await this.loginUser(email, password);
         } catch (error) {
             console.error('Employer login error:', error);
-            alert('Login failed: ' + error.message);
         }
     }
 
@@ -262,7 +255,6 @@ class FirebaseAuthManager {
                 this.updateLocalStorage(userData);
                 
                 this.hideLoading();
-                alert(`Welcome back, ${userData.name || userData.fullName}!`);
 
                 // Redirect based on user type
                 if (userData.userType === 'student') {

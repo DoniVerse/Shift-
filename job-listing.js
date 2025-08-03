@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (filterBtn) {
             filterBtn.addEventListener('click', () => {
                 // Simple filter toggle - you can expand this
-                alert('Filter options:\n- By Rating\n- By Category\n- By Date Posted\n\nThis would open a filter modal.');
+
             });
         }
     }
@@ -317,10 +317,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById('searchInput').focus();
                         break;
                     case 'Messages':
-                        alert('Messages feature coming soon!');
+
                         break;
                     case 'Profile':
-                        alert('Profile page coming soon!');
+
                         // window.location.href = 'profile.html';
                         break;
                 }
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const firebaseUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : '';
             if (!firebaseUid) {
-                alert('You must be signed in to apply. Please log in again.');
+
                 return;
             }
             const application = {
@@ -391,16 +391,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (window.jobManager && window.jobManager.submitApplication) {
                     const result = await window.jobManager.submitApplication(application);
                     if (result.success) {
-                        alert('Application submitted!');
+
                         modal.style.display = 'none';
                     } else {
-                        alert('Failed to apply: ' + (result.error || 'Unknown error'));
+
                     }
                 } else {
-                    alert('Job manager not available.');
+
                 }
             } catch (e) {
-                alert('Failed to apply: ' + e.message);
+
             }
         };
         modal.style.display = 'flex';
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const app = myApps[idx];
                     let expireKey = `expire_${user.email}_${app.jobTitle}`;
                     localStorage.removeItem(expireKey);
-                    alert('You have agreed to start the job!');
+
                     notificationsModal.style.display = 'none';
                 };
             });

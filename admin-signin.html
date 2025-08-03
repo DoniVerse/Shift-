@@ -90,7 +90,7 @@
             const password = document.getElementById('admin-password').value.trim();
             const docSnap = await getDoc(adminDocRef);
             if (!docSnap.exists() || docSnap.data().email !== email || docSnap.data().password !== password) {
-                alert('Invalid admin credentials.');
+
                 return;
             }
             // Try Firebase Auth sign in (if admin user exists)
@@ -101,12 +101,12 @@
                 localStorage.setItem('userAuthenticated', 'true');
                 // Show update section
                 document.getElementById('admin-update-section').style.display = 'block';
-                alert('Admin signed in successfully!');
+
                 showAdminLogout();
                 window.location.href = 'admin-dashboard.html';
             } catch (err) {
                 console.error('Firebase Auth sign-in error:', err);
-                alert('Signed in with Firestore credentials only. (Admin user not in Firebase Auth)\n\nFirebase error: ' + (err && err.message ? err.message : err));
+
                 document.getElementById('admin-update-section').style.display = 'block';
                 showAdminLogout();
             }
@@ -127,7 +127,7 @@
                     // Ignore errors if not signed in as admin in Firebase Auth
                 }
             }
-            alert('Admin credentials updated!');
+
             document.getElementById('admin-email').value = newEmail;
             document.getElementById('admin-password').value = '';
             document.getElementById('new-admin-email').value = '';

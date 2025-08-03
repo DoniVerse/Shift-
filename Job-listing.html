@@ -172,7 +172,7 @@
 
                     errorMessage += `This could mean:\n• No employers have published jobs in this category yet\n• Network connection issues\n• Firebase permission problems\n\nCategories:\n• legal-filings (Year 4)\n• document-summary (Year 2)\n• legal-research (Year 3)\n• corporate-advisory (Year 5)`;
 
-                    alert(errorMessage);
+
                     return;
                 }
 
@@ -182,7 +182,7 @@
             } catch (error) {
                 console.error('❌ Error fetching jobs:', error);
                 loadingModal.remove();
-                alert(`❌ Error loading jobs: ${error.message}\n\nPlease try refreshing the page.`);
+
             }
         }
 
@@ -252,7 +252,7 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
             if (!currentUser.name) {
-                alert('Please sign in to apply for jobs');
+
                 return;
             }
 
@@ -276,7 +276,7 @@
             applications.push(application);
             localStorage.setItem('jobApplications', JSON.stringify(applications));
 
-            alert(`Application submitted successfully!\n\nJob: ${job.title}\nEmployer: ${job.employerName}\n\nYour application has been sent to the employer.`);
+
 
             // Close modal
             document.querySelector('[style*="position: fixed"]').remove();

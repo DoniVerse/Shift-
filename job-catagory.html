@@ -172,7 +172,7 @@
           const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
           const appDocRef = doc(db, 'applications', appId);
           await updateDoc(appDocRef, { status: action });
-          alert(`Application ${action}!`);
+
           // Optionally, re-render the modal applications list
           const user = window.firebaseAuth && window.firebaseAuth.currentUser;
           if (user) {
@@ -180,7 +180,7 @@
             await renderEmployerApplications(document.getElementById('modalApplicationsList'), user.uid);
           }
         } catch (err) {
-          alert('Error updating application: ' + err.message);
+
         }
       };
     </script>
@@ -291,7 +291,7 @@ if (applicationsNavBtn) {
                         date: new Date().toLocaleString()
                     });
                     localStorage.setItem('studentNotifications', JSON.stringify(notifications));
-                    alert('Student accepted and notified!');
+
                     modal.style.display = 'none';
                 };
             };

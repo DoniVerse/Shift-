@@ -453,17 +453,17 @@
 
         async function updateApplicationStatusFirestore(appId, status) {
             if (!window.jobManager || !window.jobManager.applicationsCollection) {
-                alert('Job manager not available.');
+
                 return;
             }
             try {
                 const db = window.jobManager.db;
                 const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
                 await updateDoc(doc(db, window.jobManager.applicationsCollection, appId), { status });
-                alert('Application status updated to: ' + status);
+
                 viewApplications(); // Refresh
             } catch (e) {
-                alert('Failed to update status: ' + e.message);
+
             }
         }
 
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showEmployerAgreement = async function(applicationId, jobTitle, studentName, notificationId) {
         const user = window.firebaseAuth?.currentUser;
         if (!user) {
-            alert('Please log in to continue.');
+
             return;
         }
         
@@ -801,18 +801,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const agreed = document.getElementById('employerAgreementCheckbox').checked;
             
             if (!companyName || !phone || !title || !signature || !agreed) {
-                alert('Please fill all fields and agree to the terms.');
+
                 return;
             }
             
             try {
                 await saveEmployerAgreement(applicationId, jobTitle, studentName, companyName, phone, title, signature, notificationId);
                 modal.remove();
-                alert('Agreement signed successfully! The job can now begin.');
+
                 loadEmployerNotifications(); // Reload notifications
             } catch (error) {
                 console.error('Error saving agreement:', error);
-                alert('Error saving agreement. Please try again.');
+
             }
         });
     };

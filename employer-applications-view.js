@@ -167,13 +167,13 @@ window.handleApplicationAction = async function(appId, action, studentId) {
       });
     }
     
-    alert(`Application ${action}!`);
+
     // Reload applications
     const user = window.firebaseAuth && window.firebaseAuth.currentUser;
     if (user) {
       loadEmployerApplications(user.uid);
     }
   } catch (err) {
-    alert('Error updating application: ' + err.message);
+
   }
 }; 

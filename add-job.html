@@ -92,7 +92,7 @@
             if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
                 window.firebaseAuth.onAuthStateChange(function(firebaseUser) {
                     if (!firebaseUser) {
-                        alert('You must be logged in as an employer to add a job. Redirecting to login...');
+
                         window.location.href = 'employer-signin.html';
                         return;
                     }
@@ -126,7 +126,7 @@
                         const employerUid = window.firebaseAuth && window.firebaseAuth.currentUser ? window.firebaseAuth.currentUser.uid : null;
 
                         if (!employerUid) {
-                            alert('Error: You must be logged in with a valid employer account to post a job. Please log in again.');
+
                             window.location.href = 'employer-signin.html';
                             return;
                         }
@@ -192,7 +192,7 @@ Continue with publishing?
                                     console.error('🔥 Error code:', firebaseError.code);
                                     console.error('🔥 Error message:', firebaseError.message);
 
-                                    alert(`⚠️ Firebase Error: ${firebaseError.message}\n\nFalling back to local storage...`);
+
 
                                     console.log('📱 Using local storage fallback...');
                                     result = window.localJobsManager.publishJob(job);
@@ -200,7 +200,7 @@ Continue with publishing?
                                 }
 
                                 if (result.success) {
-                                    alert(`✅ Job "${jobTitle}" has been published successfully!\n\nJob ID: ${result.jobId}\nStudents can now see and apply to this job.`);
+
                                     window.location.href = 'job-catagory.html';
                                 } else {
                                     throw new Error(result.error);
@@ -215,7 +215,7 @@ Continue with publishing?
                                     errorMessage = `❌ Network Error: ${error.message}\n\nYour job will be saved locally.`;
                                 }
 
-                                alert(errorMessage);
+
 
                                 // Fallback to localStorage
                                 const job = {
@@ -233,7 +233,7 @@ Continue with publishing?
                                 const jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
                                 jobs.push(job);
                                 localStorage.setItem('jobs', JSON.stringify(jobs));
-                                alert(`✅ Job "${jobTitle}" has been published locally!\n\nIt will be visible to students on this device.`);
+
                                 window.location.href = 'job-catagory.html';
                             } finally {
                                 // Reset button
@@ -241,7 +241,7 @@ Continue with publishing?
                                 submitBtn.disabled = false;
                             }
                         } else {
-                            alert('Please fill in all required fields');
+
                         }
                     });
 
@@ -268,7 +268,7 @@ Continue with publishing?
                 });
             } else {
                 // Fallback if onAuthStateChange is not available (should ideally not happen with current setup)
-                alert('Firebase Auth is not initialized or onAuthStateChange is not available. Please ensure Firebase is loaded correctly.');
+
                 window.location.href = 'employer-signin.html'; // Redirect to login if auth is not ready
             }
         });
