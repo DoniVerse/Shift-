@@ -32,8 +32,57 @@ document.addEventListener('DOMContentLoaded', function() {
     handleFileUpload(studentIdInput, studentIdDisplay);
     handleFileUpload(cvUploadInput, cvUploadDisplay);
 
-    // Form submission is now handled by Firebase Auth (firebase-auth.js)
-    // The old form submission code has been removed to prevent conflicts
+    // Form submission: upload student ID image to Firebase Storage and save URL to Firestore
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        // Get student ID file
+        const studentIdFile = studentIdInput.files[0];
+        // Get other form data as needed
+        // ...existing code for other fields...
+
+        // Firebase imports (assume firebase-auth.js already loaded and initialized)
+        // Use window.firebaseApp, window.firebaseAuth, window.firebaseFirestore if available
+        const app = window.firebaseApp || window.app;
+        const db = window.firebaseFirestore || window.db;
+        const auth = window.firebaseAuth || window.auth;
+        const storage = window.firebaseStorage || (await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js')).getStorage(app);
+        const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js');
+
+        let studentIdImageUrl = '';
+        if (studentIdFile) {
+            try {
+                // Upload to Firebase Storage
+                const storageRef = ref(storage, 'student_ids/' + Date.now() + '_' + studentIdFile.name);
+                await uploadBytes(storageRef, studentIdFile);
+                studentIdImageUrl = await getDownloadURL(storageRef);
+            } catch (err) {
+                console.error('Error uploading student ID image:', err);
+            }
+        }
+
+        // After successful signup (handled by firebase-auth.js), update Firestore profile
+        // Save studentIdImageUrl to Firestore user profile as soon as user is available
+        async function saveStudentIdImageUrl() {
+            const user = auth.currentUser;
+            if (user && studentIdImageUrl) {
+                const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    await updateDoc(userDocRef, { studentIdImageUrl });
+                } else {
+                    await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
+                }
+            }
+        }
+        // Try immediately, then fallback to wait for user creation
+        await saveStudentIdImageUrl();
+        if (!auth.currentUser) {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) await saveStudentIdImageUrl();
+            });
+        }
+    });
 
     // Google sign up button
     document.querySelector('.google-btn').addEventListener('click', function() {

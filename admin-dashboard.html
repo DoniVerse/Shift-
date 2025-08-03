@@ -107,11 +107,17 @@
                         app.employerId ? getEmployerInfo(app.employerId) : null
                     ]);
 
-                    let jobStatus = 'Pending';
-                    if (app.startedAt && !app.finishedAt) jobStatus = 'Started';
-                    if (app.finishedAt) jobStatus = 'Finished';
-                    if (app.status === 'accepted') jobStatus = 'Accepted';
-                    if (app.status === 'rejected') jobStatus = 'Rejected';
+                    // Improved job status logic
+        // Status: accepted/rejected/pending (never 'started' or 'finished')
+        let statusText = 'Pending';
+        let statusColor = 'orange';
+        if (app.status === 'accepted' || app.status === 'started' || app.status === 'finished') {
+            statusText = 'Accepted';
+            statusColor = 'green';
+        } else if (app.status === 'rejected') {
+            statusText = 'Rejected';
+            statusColor = 'red';
+        }
 
                     // Student ID image
                     let studentIdImg = '';
@@ -125,10 +131,14 @@
                         ${studentIdImg}
                     </div>`;
 
-                    // Employer logo
+                    // Employer logo or placeholder
                     let employerLogo = '';
                     if (employerInfo?.logo) {
                         employerLogo = `<div style="margin-top:8px;"><img src="${employerInfo.logo}" alt="Company Logo" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;background:#fff;object-fit:contain;" /></div>`;
+                    } else {
+                        // Show initials as placeholder
+                        let initials = (employerInfo?.companyName || employerInfo?.name || 'C').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                        employerLogo = `<div style="margin-top:8px;width:90px;height:60px;display:flex;align-items:center;justify-content:center;background:#eee;border-radius:6px;border:1px solid #ccc;font-size:2rem;color:#888;">${initials}</div>`;
                     }
 
                     let employerBlock = `<div><strong>Employer:</strong> ${employerInfo?.companyName || employerInfo?.name || app.employerId || 'Unknown'}<br>
@@ -137,16 +147,25 @@
                         ${employerLogo}
                     </div>`;
 
-                    let jobBlock = `<div><strong>Job:</strong> ${jobInfo?.title || app.jobTitle || 'N/A'}<br>
-                        <strong>Job ID:</strong> ${app.jobId || 'N/A'}<br>
-                        <strong>Status:</strong> <span style="color:${jobStatus==='Finished'?'green':jobStatus==='Rejected'?'red':'orange'};font-weight:bold;">${jobStatus}</span></div>`;
+
+        // Timer: show started/finished times for accepted jobs if present
+        let jobTimes = '';
+        if ((app.status === 'accepted' || app.status === 'started' || app.status === 'finished') && app.startedAt) {
+            jobTimes += `<div><strong>Started:</strong> ${formatDate(getDate(app.startedAt))}</div>`;
+        }
+        if ((app.status === 'accepted' || app.status === 'started' || app.status === 'finished') && app.finishedAt) {
+            jobTimes += `<div><strong>Finished:</strong> ${formatDate(getDate(app.finishedAt))}</div>`;
+        }
+
+        let jobBlock = `<div><strong>Job:</strong> ${jobInfo?.title || app.jobTitle || 'N/A'}<br>
+            <strong>Job ID:</strong> ${app.jobId || 'N/A'}<br>
+            <strong>Status:</strong> <span style="color:${statusColor};font-weight:bold;">${statusText}</span>
+            ${jobTimes}
+        </div>`;
 
                     let agreements = '';
                     if (app.studentAgreementSigned) agreements += `<span>Student Agreement: ✅ Signed</span><br>`;
                     if (app.employerAgreementSigned) agreements += `<span>Employer Agreement: ✅ Signed</span><br>`;
-
-                    let started = app.startedAt ? `<span>Started: ${formatDate(getDate(app.startedAt))}</span><br>` : '';
-                    let finished = app.finishedAt ? `<span>Finished: ${formatDate(getDate(app.finishedAt))}</span><br>` : '';
 
                     return `<div style="border:1px solid #ddd;padding:15px;margin:10px 0;border-radius:8px;background:#f9f9f9;">
                         <h4>Application ID: ${app.id}</h4>
@@ -157,8 +176,6 @@
                         </div>
                         <div style="margin-top:10px;font-size:0.95em;color:#555;">
                             ${agreements}
-                            ${started}
-                            ${finished}
                         </div>
                     </div>`;
                 }
