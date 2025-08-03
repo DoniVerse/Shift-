@@ -259,18 +259,18 @@
             const agreed = document.getElementById('studentAgreementCheckbox').checked;
             
             if (!phone || !signature || !agreed) {
-                alert('Please fill all fields and agree to the terms.');
+
                 return;
             }
             
             try {
                 await saveStudentAgreement(applicationId, jobTitle, employerName, phone, signature, notificationId);
                 modal.remove();
-                alert('Agreement signed successfully! The employer will be notified.');
+
                 loadStudentNotifications(); // Reload notifications
             } catch (error) {
                 console.error('Error saving agreement:', error);
-                alert('Error saving agreement. Please try again.');
+
             }
         });
     };

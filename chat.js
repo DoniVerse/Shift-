@@ -802,7 +802,7 @@ class ChatApp {
         }
 
         if (!this.currentConversation) {
-            alert('Please select a conversation first');
+
             return;
         }
 
@@ -1034,7 +1034,7 @@ class ChatApp {
 
         if (!this.currentUser) {
             console.error('No current user - cannot start conversation');
-            alert('Please sign in first to start a conversation');
+
             return;
         }
 
@@ -1084,7 +1084,7 @@ class ChatApp {
             console.error('Full error:', error);
             console.error('Current user auth state:', this.currentUser);
 
-            alert('Failed to start conversation: ' + error.message + '\nCheck console for details.');
+
         }
     }
 
@@ -1171,13 +1171,13 @@ class ChatApp {
         Array.from(files).forEach(file => {
             // Check file size (max 5MB for Firestore compatibility)
             if (file.size > 5 * 1024 * 1024) {
-                alert(`File "${file.name}" is too large. Maximum size is 5MB.\nFor larger files, consider using a file sharing service.`);
+
                 return;
             }
 
             // Check if file already selected
             if (this.selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
-                alert(`File "${file.name}" is already selected.`);
+
                 return;
             }
 
@@ -1287,19 +1287,19 @@ class ChatApp {
             console.log('✅ File downloaded:', fileName);
         } catch (error) {
             console.error('❌ Error downloading file:', error);
-            alert('Failed to download file: ' + error.message);
+
         }
     }
 
     // Send message with files (enhanced version)
     async sendMessageWithFiles(messageText) {
         if (!this.currentConversation) {
-            alert('Please select a conversation first');
+
             return;
         }
 
         if (!messageText.trim() && this.selectedFiles.length === 0) {
-            alert('Please enter a message or select files to send');
+
             return;
         }
 
@@ -1350,7 +1350,7 @@ class ChatApp {
 
                 } catch (error) {
                     console.error('❌ Error processing files:', error);
-                    alert(error.message);
+
                     return; // Don't send message if file processing fails
                 }
             }
@@ -1367,7 +1367,7 @@ class ChatApp {
 
         } catch (error) {
             console.error('❌ Error sending message with files:', error);
-            alert('Failed to send message: ' + error.message);
+
         }
     }
 }

@@ -138,7 +138,7 @@
                 const agreementDoc = await getDocs(agreementRef);
                 
                 if (!agreementDoc.exists()) {
-                    alert('Agreement not found');
+
                     return;
                 }
                 
@@ -185,13 +185,13 @@
                 document.body.appendChild(modal);
             } catch (error) {
                 console.error('Error viewing agreement:', error);
-                alert('Error loading agreement details');
+
             }
         };
 
         window.downloadAgreement = function(agreementId) {
             // Simple download functionality - you can enhance this
-            alert('Download functionality would be implemented here for agreement: ' + agreementId);
+
         };
     </script>
 </body>

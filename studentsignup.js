@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.google-btn').addEventListener('click', function() {
         // Implement Google OAuth here
         console.log('Google sign up clicked');
-        alert('Google sign up functionality would be implemented here.');
+
     });
 
     // LinkedIn URL validation

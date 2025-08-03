@@ -97,10 +97,10 @@
             // Simulate authentication delay
             setTimeout(() => {
                 if (source === 'signup') {
-                    alert(`Account created successfully with Google account: ${name} (${email})`);
+
                     window.location.href = 'employer-signin.html';
                 } else {
-                    alert(`Signed in successfully with Google account: ${name} (${email})`);
+
                     // Redirect to dashboard or main page
                     window.location.href = 'employer-signin.html'; // Replace with actual dashboard
                 }
@@ -108,7 +108,7 @@
         }
         
         function addAccount() {
-            alert('This would redirect to Google\'s account creation/login flow');
+
             // In a real implementation, this would redirect to Google's OAuth flow
         }
         

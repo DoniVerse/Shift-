@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.google-btn').addEventListener('click', function() {
         // Implement Google OAuth here
         console.log('Google sign in clicked');
-        alert('Google sign in functionality would be implemented here.');
+
     });
 
     // Remember me functionality (if you want to add it later)

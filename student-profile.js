@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function saveFormData(section, form) {
         const userData = JSON.parse(localStorage.getItem('currentUser')) || {};
         if (userData.userType !== 'student') {
-            alert('Only authenticated students can edit this information.');
+
             return;
         }
 
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const user = auth?.currentUser;
 
         if (!user || !db) {
-            alert('Please sign in to save your information.');
+
             return;
         }
 
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error saving to Firestore:', error);
             // Fallback to localStorage
             localStorage.setItem(section + 'Data', JSON.stringify(data));
-            alert('Information saved locally. Please check your internet connection.');
+
         }
     }
 
@@ -511,21 +511,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Global functions for settings
 function changePassword() {
-    alert('Change password functionality would be implemented here.');
+
 }
 
 function notificationSettings() {
-    alert('Notification settings would be implemented here.');
+
 }
 
 function privacySettings() {
-    alert('Privacy settings would be implemented here.');
+
 }
 
 function deleteAccount() {
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         localStorage.clear();
-        alert('Account deleted successfully.');
+
         window.location.href = 'index.html';
     }
 }
@@ -621,7 +621,7 @@ window.editPersonalInfo = function() {
         
         document.getElementById('profileName').textContent = name;
         document.getElementById('sectionModal').style.display = 'none';
-        alert('Personal information updated successfully!');
+
         location.reload(); // Refresh to show updated data
     });
 };
