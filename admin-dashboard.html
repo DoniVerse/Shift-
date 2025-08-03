@@ -113,13 +113,29 @@
                     if (app.status === 'accepted') jobStatus = 'Accepted';
                     if (app.status === 'rejected') jobStatus = 'Rejected';
 
+                    // Student ID image
+                    let studentIdImg = '';
+                    if (studentInfo?.studentIdImageUrl) {
+                        studentIdImg = `<div style="margin-top:8px;"><img src="${studentInfo.studentIdImageUrl}" alt="Student ID" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;" /></div>`;
+                    }
+
                     let studentBlock = `<div><strong>Student:</strong> ${studentInfo?.name || app.studentName || app.studentId || 'Unknown'}<br>
                         <strong>Email:</strong> ${studentInfo?.email || app.studentEmail || 'N/A'}<br>
-                        <strong>ID:</strong> ${app.studentId || studentInfo?.studentId || 'N/A'}</div>`;
+                        <strong>ID:</strong> ${app.studentId || studentInfo?.studentId || 'N/A'}
+                        ${studentIdImg}
+                    </div>`;
+
+                    // Employer logo
+                    let employerLogo = '';
+                    if (employerInfo?.logo) {
+                        employerLogo = `<div style="margin-top:8px;"><img src="${employerInfo.logo}" alt="Company Logo" style="max-width:90px;max-height:60px;border-radius:6px;border:1px solid #ccc;background:#fff;object-fit:contain;" /></div>`;
+                    }
 
                     let employerBlock = `<div><strong>Employer:</strong> ${employerInfo?.companyName || employerInfo?.name || app.employerId || 'Unknown'}<br>
                         <strong>Email:</strong> ${employerInfo?.email || 'N/A'}<br>
-                        <strong>ID:</strong> ${app.employerId || 'N/A'}</div>`;
+                        <strong>ID:</strong> ${app.employerId || 'N/A'}
+                        ${employerLogo}
+                    </div>`;
 
                     let jobBlock = `<div><strong>Job:</strong> ${jobInfo?.title || app.jobTitle || 'N/A'}<br>
                         <strong>Job ID:</strong> ${app.jobId || 'N/A'}<br>
