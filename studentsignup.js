@@ -55,10 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const storageRef = ref(storage, 'student_ids/' + Date.now() + '_' + studentIdFile.name);
                 await uploadBytes(storageRef, studentIdFile);
                 studentIdImageUrl = await getDownloadURL(storageRef);
-                console.log('✅ Student ID image uploaded successfully:', studentIdImageUrl);
-                
-                // Store the URL temporarily in case user isn't signed in yet
-                localStorage.setItem('tempStudentIdImageUrl', studentIdImageUrl);
             } catch (err) {
                 console.error('Error uploading student ID image:', err);
             }
@@ -68,20 +64,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wait for user to be created and signed in
         auth.onAuthStateChanged(async (user) => {
             if (user && studentIdImageUrl) {
-                try {
-                    // Save studentIdImageUrl to Firestore user profile
-                    const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists()) {
-                        await updateDoc(userDocRef, { studentIdImageUrl });
-                        console.log('✅ Student ID image URL saved to existing user profile');
-                    } else {
-                        await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
-                        console.log('✅ Student ID image URL saved to new user profile');
-                    }
-                } catch (error) {
-                    console.error('❌ Error saving student ID image URL:', error);
+                // Save studentIdImageUrl to Firestore user profile
+                const { doc, setDoc, updateDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    await updateDoc(userDocRef, { studentIdImageUrl });
+                } else {
+                    await setDoc(userDocRef, { studentIdImageUrl }, { merge: true });
                 }
             }
         });
@@ -91,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.google-btn').addEventListener('click', function() {
         // Implement Google OAuth here
         console.log('Google sign up clicked');
-
+        alert('Google sign up functionality would be implemented here.');
     });
 
     // LinkedIn URL validation

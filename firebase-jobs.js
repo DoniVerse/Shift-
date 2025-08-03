@@ -182,22 +182,6 @@ class JobManager {
     // Submit job application
     async submitApplication(applicationData) {
         try {
-            // Get student ID image URL from user profile if available
-            let studentIdImageUrl = '';
-            if (applicationData.studentId) {
-                try {
-                    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-                    const userDoc = await getDoc(doc(this.db, 'users', applicationData.studentId));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        studentIdImageUrl = userData.studentIdImageUrl || '';
-                        console.log('📸 Found student ID image URL:', studentIdImageUrl);
-                    }
-                } catch (error) {
-                    console.error('Error fetching student ID image:', error);
-                }
-            }
-
             const appDoc = {
                 jobId: applicationData.jobId,
                 jobTitle: applicationData.jobTitle,
@@ -211,7 +195,6 @@ class JobManager {
                 studentUniversity: applicationData.studentUniversity,
                 studentDepartment: applicationData.studentDepartment,
                 studentId: applicationData.studentId,
-                studentIdImageUrl: studentIdImageUrl, // Include student ID image URL
                 status: 'applied',
                 createdAt: serverTimestamp()
             };
@@ -258,6 +241,66 @@ class JobManager {
             return applications;
         } catch (error) {
             console.error('Error fetching applications:', error.message);
+            return [];
+        }
+    }
+
+    // Update application status and timestamps
+    async updateApplicationStatus(applicationId, status, timestamp = null) {
+        try {
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const appRef = doc(this.db, this.applicationsCollection, applicationId);
+            
+            const updateData = {
+                status: status,
+                updatedAt: serverTimestamp()
+            };
+
+            // Add timestamp based on status
+            if (status === 'started' && !timestamp) {
+                updateData.startedAt = serverTimestamp();
+            } else if (status === 'finished' && !timestamp) {
+                updateData.finishedAt = serverTimestamp();
+            } else if (timestamp) {
+                updateData[status === 'started' ? 'startedAt' : 'finishedAt'] = timestamp;
+            }
+
+            await updateDoc(appRef, updateData);
+            
+            return {
+                success: true,
+                message: `Application status updated to ${status}`
+            };
+        } catch (error) {
+            console.error('Error updating application status:', error.message);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Get all applications for admin dashboard
+    async getAllApplications() {
+        try {
+            const q = query(
+                collection(this.db, this.applicationsCollection),
+                orderBy('createdAt', 'desc')
+            );
+
+            const querySnapshot = await getDocs(q);
+            const applications = [];
+            
+            querySnapshot.forEach((doc) => {
+                applications.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            return applications;
+        } catch (error) {
+            console.error('Error fetching all applications:', error.message);
             return [];
         }
     }

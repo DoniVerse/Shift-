@@ -190,14 +190,14 @@ window.handleApplicationAction = async function(appId, action, studentId, jobTit
         infoDiv.innerHTML = '<p style="margin:0; color:#856404; font-weight:bold;">📋 Do not start the job yet. Check your notifications. If the student accepts the agreement and you agree to the terms, then you can start the job in the job-application section.</p>';
         card.appendChild(infoDiv);
       }
-
+      alert('Application accepted!');
     } else {
-
+      alert(`Application ${action}!`);
       window.location.reload();
     }
   } catch (err) {
     console.error('Error in handleApplicationAction:', err);
-
+    alert('Error updating application: ' + err.message);
     window.location.reload();
   }
 };
