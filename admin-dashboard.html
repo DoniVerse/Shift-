@@ -73,15 +73,28 @@
         }
         // Helper functions for date formatting
         function getDate(timestamp) {
-            if (!timestamp) return new Date();
-            if (timestamp.toDate) return timestamp.toDate();
-            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
-            return new Date(timestamp);
+            if (!timestamp) return null;
+            // Firestore Timestamp object
+            if (typeof timestamp === 'object' && typeof timestamp.toDate === 'function') return timestamp.toDate();
+            // Firestore Timestamp plain object
+            if (typeof timestamp === 'object' && typeof timestamp.seconds === 'number') return new Date(timestamp.seconds * 1000);
+            // ISO string or Date string
+            if (typeof timestamp === 'string') {
+                let d = new Date(timestamp);
+                if (!isNaN(d.getTime())) return d;
+            }
+            // Fallback: try to parse as number
+            if (typeof timestamp === 'number') return new Date(timestamp);
+            return null;
         }
 
         function formatDate(date) {
             if (!date) return 'N/A';
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            if (typeof date === 'string') date = new Date(date);
+            if (date instanceof Date && !isNaN(date.getTime())) {
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            }
+            return 'N/A';
         }
 
         // Load all applications using JobManager
@@ -115,6 +128,12 @@
 
                 // Helper to fetch and render details for each application
                 async function renderApplication(app) {
+                    // Debug: log full application object and all timestamps
+                    console.log('Application object:', app);
+                    if (app) {
+                        console.log('App ID:', app.id, 'Status:', app.status);
+                        console.log('acceptedAt:', app.acceptedAt, 'startedAt:', app.startedAt, 'finishedAt:', app.finishedAt, 'rejectedAt:', app.rejectedAt);
+                    }
                     // Fetch job, student, and employer info
                     const [jobInfo, studentInfo, employerInfo] = await Promise.all([
                         app.jobId ? getJobInfo(app.jobId) : null,
@@ -125,7 +144,6 @@
                     // Improved job status logic with proper status display
                     let statusText = app.status || 'Pending';
                     let statusColor = 'orange';
-                    
                     if (app.status === 'accepted') {
                         statusText = 'Accepted';
                         statusColor = 'green';
@@ -139,6 +157,13 @@
                         statusText = 'Rejected';
                         statusColor = 'red';
                     }
+
+                    // Always show all timestamps if present
+                    let statusTimestamps = '';
+                    if (app.acceptedAt) statusTimestamps += `<div style='font-size:0.95em;color:#555;'><strong>Accepted At:</strong> ${formatDate(getDate(app.acceptedAt))}</div>`;
+                    if (app.startedAt) statusTimestamps += `<div style='font-size:0.95em;color:#555;'><strong>Started At:</strong> ${formatDate(getDate(app.startedAt))}</div>`;
+                    if (app.finishedAt) statusTimestamps += `<div style='font-size:0.95em;color:#555;'><strong>Finished At:</strong> ${formatDate(getDate(app.finishedAt))}</div>`;
+                    if (app.rejectedAt) statusTimestamps += `<div style='font-size:0.95em;color:#555;'><strong>Rejected At:</strong> ${formatDate(getDate(app.rejectedAt))}</div>`;
 
                     // Student ID image - try multiple possible field names
                     let studentIdImg = '';
@@ -185,6 +210,7 @@
         let jobBlock = `<div><strong>Job:</strong> ${jobInfo?.title || app.jobTitle || 'N/A'}<br>
             <strong>Job ID:</strong> ${app.jobId || 'N/A'}<br>
             <strong>Status:</strong> <span style="color:${statusColor};font-weight:bold;">${statusText}</span>
+            ${statusTimestamps}
             ${jobTimes}
         </div>`;
 
