@@ -147,80 +147,72 @@ document.addEventListener('DOMContentLoaded', function() {
         return starsHTML;
     }
 
-    // Display jobs based on year
+    // Wait for job manager to be available (since firebase-jobs.js loads as a module later)
+    async function waitForJobManager(maxWaitMs = 5000, intervalMs = 100) {
+        const start = Date.now();
+        while (Date.now() - start < maxWaitMs) {
+            if (window.jobManager) return true;
+            await new Promise(r => setTimeout(r, intervalMs));
+        }
+        return false;
+    }
+
+    // Display all jobs (no year/category restriction)
     async function displayJobs() {
         const userData = getUserData();
         const jobsGrid = document.getElementById('jobsGrid');
         const noJobsMessage = document.getElementById('noJobsMessage');
 
-        // Map year to category
-        const yearToCategory = {
-            2: 'document-summary',
-            3: 'legal-research',
-            4: 'legal-filings',
-            5: 'corporate-advisory'
-        };
-        const userYear = parseInt(userData.yearOfStudy) || 2;
-        const category = yearToCategory[userYear];
+        const allCategories = ['document-summary', 'legal-research', 'legal-filings', 'corporate-advisory'];
 
         let jobs = [];
 
         // Try Firebase first
         try {
+            // Ensure jobManager is ready
+            await waitForJobManager();
             if (window.jobManager) {
-                const firebaseJobs = await window.jobManager.getJobsByCategory(category);
-                jobs = firebaseJobs;
+                if (typeof window.jobManager.getAllJobs === 'function') {
+                    jobs = await window.jobManager.getAllJobs();
+                } else if (typeof window.jobManager.getJobsByCategory === 'function') {
+                    const byCategory = await Promise.all(allCategories.map(cat => window.jobManager.getJobsByCategory(cat).catch(() => [])));
+                    jobs = byCategory.flat();
+                } else {
+                    throw new Error('No job fetching API found');
+                }
             } else {
                 throw new Error('Firebase not available');
             }
         } catch (firebaseError) {
             // Fallback to local storage
-            let allJobs = [];
-            if (window.localJobsManager) {
-                allJobs = window.localJobsManager.getAllJobs();
+            if (window.localJobsManager && typeof window.localJobsManager.getAllJobs === 'function') {
+                jobs = window.localJobsManager.getAllJobs();
             } else {
-                allJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
             }
 
-            jobs = allJobs.filter(job => {
-                return job.category === category;
-            });
+            // As a final fallback, merge static demo categories
+            if (!jobs.length && typeof jobCategories === 'object') {
+                jobs = Object.values(jobCategories).flat();
+            }
         }
 
-        // If no jobs posted by employers, fallback to static
-        let jobsToShow = jobs;
-        if (!jobs.length) {
-            // fallback to static
-            jobsToShow = jobCategories[userYear] || [];
-        }
+        // Best-effort sort by createdAt desc if available
+        jobs.sort((a, b) => {
+            const ad = (a.createdAt && a.createdAt.getTime) ? a.createdAt.getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            const bd = (b.createdAt && b.createdAt.getTime) ? b.createdAt.getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return bd - ad;
+        });
 
         jobsGrid.innerHTML = '';
 
-        if (!jobsToShow.length) {
+        if (!jobs.length) {
             jobsGrid.style.display = 'none';
             noJobsMessage.style.display = 'block';
-
-            const categoryTitles = {
-                'document-summary': 'Summarizing Legal Documents',
-                'legal-research': 'Legal Research Assistance',
-                'legal-filings': 'Preparing Legal Filings & Case Documents',
-                'corporate-advisory': 'Corporate Legal Advisory Support'
-            };
-
             noJobsMessage.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <h3>🎓 No Jobs Available for Year ${userYear} Students</h3>
-                    <p><strong>Your Category:</strong> ${categoryTitles[category] || category}</p>
-                    <p><strong>Category ID:</strong> ${category}</p>
-                    <hr style="margin: 20px 0; border: 1px solid #eee;">
-                    <p>📋 <strong>Year-to-Category Mapping:</strong></p>
-                    <ul style="text-align: left; display: inline-block;">
-                        <li>Year 2 → Summarizing Legal Documents</li>
-                        <li>Year 3 → Legal Research Assistance</li>
-                        <li>Year 4 → Preparing Legal Filings & Case Documents</li>
-                        <li>Year 5 → Corporate Legal Advisory Support</li>
-                    </ul>
-                    <p>💼 Employers need to publish jobs in the <strong>"${categoryTitles[category]}"</strong> category for you to see them.</p>
+                    <h3>No jobs available yet</h3>
+                    <p>Please check back later.</p>
                 </div>
             `;
             return;
@@ -229,30 +221,23 @@ document.addEventListener('DOMContentLoaded', function() {
         jobsGrid.style.display = 'grid';
         noJobsMessage.style.display = 'none';
 
-        // Update page title to show filtering info
+        // Update page title to show count only
         const pageTitle = document.querySelector('.page-title');
         if (pageTitle) {
-            const categoryTitles = {
-                'document-summary': 'Summarizing Legal Documents',
-                'legal-research': 'Legal Research Assistance',
-                'legal-filings': 'Preparing Legal Filings & Case Documents',
-                'corporate-advisory': 'Corporate Legal Advisory Support'
-            };
-            pageTitle.innerHTML = `Available Jobs<br><small style="color: #666; font-size: 14px;">🎓 Year ${userYear} Student - ${categoryTitles[category] || category} (${jobsToShow.length} jobs)</small>`;
+            pageTitle.innerHTML = `Available Jobs<br><small style="color: #666; font-size: 14px;">${jobs.length} jobs</small>`;
         }
 
-        jobsToShow.forEach(job => {
+        jobs.forEach(job => {
             const jobCard = document.createElement('div');
             jobCard.className = 'job-card';
             jobCard.innerHTML = `
                 <div class="job-icon">${job.icon || ''}</div>
-                <div class="job-title">${job.title}</div>
+                <div class="job-title">${job.title || ''}</div>
                 <div class="job-rating">${job.rating ? createStarRating(job.rating) : ''}</div>
-                <div class="job-description">${job.description}</div>
+                <div class="job-description">${job.description || ''}</div>
                 <div class="job-employer">${job.employerName ? `<strong>Employer:</strong> ${job.employerName}` : ''}</div>
                 <div class="job-hours">${job.expectedHours ? `<strong>Expected Hours:</strong> ${job.expectedHours}` : ''}</div>
             `;
-            // Show job details modal on click
             jobCard.onclick = () => showJobModal(job);
             jobsGrid.appendChild(jobCard);
         });
