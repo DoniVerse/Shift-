@@ -109,10 +109,10 @@
                         const jobDescription = document.getElementById('job-description').value;
                         const paymentCode = document.getElementById('payment-code').value;
                         const expectedHours = document.getElementById('expected-hours').value;
-                        // Get category from URL
+                        // No category flow; department-based matching
                         const urlParams = new URLSearchParams(window.location.search);
-                        const category = urlParams.get('category') || '';
-                        const categoryTitle = urlParams.get('title') || '';
+                        const category = '';
+                        const categoryTitle = '';
                         // Get employer info from both possible sources
                         const employerInfo = JSON.parse(localStorage.getItem('employerInfo') || '{}');
                         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -136,16 +136,13 @@
                         console.log('📝 Description:', jobDescription);
                         console.log('📝 Payment:', paymentCode);
                         console.log('📝 Hours:', expectedHours);
-                        console.log('📝 Category:', category);
-                        console.log('📝 Category Title:', categoryTitle);
+                        // Department will be attached automatically from employer profile
                         console.log('👤 Employer info:', employer);
 
                         // Show debug alert to user
                         const debugInfo = `
 🔍 JOB SUBMISSION DEBUG:
 Title: ${jobTitle}
-Category: ${category}
-Category Title: ${categoryTitle}
 Employer: ${employer.name || 'MISSING'}
 Email: ${employer.email || 'MISSING'}
 
@@ -156,7 +153,7 @@ Continue with publishing?
                             return;
                         }
 
-                        if (jobTitle && jobDescription && paymentCode && category && expectedHours) {
+                        if (jobTitle && jobDescription && paymentCode && expectedHours) {
                             // Show loading message
                             const submitBtn = document.querySelector('.publish-btn');
                             const originalText = submitBtn.textContent;
@@ -165,13 +162,24 @@ Continue with publishing?
 
                             try {
                                 // Build job object
+                                // Resolve employer department (from Firestore users/{uid} or local storage)
+                                let department = '';
+                                try {
+                                    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+                                    const userDoc = await getDoc(doc(window.firebaseFirestore, 'users', employerUid));
+                                    if (userDoc.exists()) {
+                                        department = userDoc.data()?.desiredDepartment || '';
+                                    }
+                                } catch (_) {
+                                    department = employerInfo.desiredDepartment || currentUser.desiredDepartment || '';
+                                }
+
                                 const job = {
                                     title: jobTitle,
                                     description: jobDescription,
                                     paymentCode: paymentCode,
                                     expectedHours: expectedHours,
-                                    category: category,
-                                    categoryTitle: categoryTitle,
+                                    department: department || 'General',
                                     employerName: employer.name || '',
                                     employerEmail: employer.email || '',
                                     employerId: employerUid // Always set employerId to Firebase UID
@@ -223,8 +231,7 @@ Continue with publishing?
                                     description: jobDescription,
                                     paymentCode: paymentCode,
                                     expectedHours: expectedHours,
-                                    category: category,
-                                    categoryTitle: categoryTitle,
+                                    department: (typeof department !== 'undefined' && department) ? department : 'General',
                                     employerName: employer.name || '',
                                     employerEmail: employer.email || '',
                                     timestamp: Date.now(),

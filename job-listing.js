@@ -1,103 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Job categories based on year of study
-    const jobCategories = {
-        2: [
-            {
-                id: 1,
-                title: "Summarizing Legal Documents",
-                icon: "📄",
-                rating: 4.2,
-                description: "Review and summarize legal documents",
-                category: "summarizing"
-            },
-            {
-                id: 2,
-                title: "Document Review Assistant",
-                icon: "📋",
-                rating: 4.0,
-                description: "Assist with document review processes",
-                category: "summarizing"
-            }
-        ],
-        3: [
-            {
-                id: 3,
-                title: "Legal Research Assistance",
-                icon: "🔍",
-                rating: 4.5,
-                description: "Conduct legal research and analysis",
-                category: "research"
-            },
-            {
-                id: 4,
-                title: "Case Law Research",
-                icon: "⚖️",
-                rating: 4.3,
-                description: "Research case law and precedents",
-                category: "research"
-            },
-            {
-                id: 5,
-                title: "Legal Database Research",
-                icon: "💻",
-                rating: 4.1,
-                description: "Navigate legal databases for research",
-                category: "research"
-            }
-        ],
-        4: [
-            {
-                id: 6,
-                title: "Preparing Legal Filings & Case Documents",
-                icon: "📁",
-                rating: 4.4,
-                description: "Prepare and organize legal filings",
-                category: "filing"
-            },
-            {
-                id: 7,
-                title: "Court Document Preparation",
-                icon: "📝",
-                rating: 4.2,
-                description: "Assist with court document preparation",
-                category: "filing"
-            },
-            {
-                id: 8,
-                title: "Legal Filing Assistant",
-                icon: "📤",
-                rating: 4.0,
-                description: "Support legal filing processes",
-                category: "filing"
-            }
-        ],
-        5: [
-            {
-                id: 9,
-                title: "Corporate Legal Advisory Support",
-                icon: "🤝",
-                rating: 4.6,
-                description: "Support corporate legal advisory services",
-                category: "corporate"
-            },
-            {
-                id: 10,
-                title: "Contract Review Assistant",
-                icon: "📋",
-                rating: 4.3,
-                description: "Assist with contract review and analysis",
-                category: "corporate"
-            },
-            {
-                id: 11,
-                title: "Corporate Compliance Support",
-                icon: "✅",
-                rating: 4.1,
-                description: "Support corporate compliance initiatives",
-                category: "corporate"
-            }
-        ]
-    };
 
     // Get user data from localStorage or URL params
     function getUserData() {
@@ -157,44 +58,42 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
     }
 
-    // Display all jobs (no year/category restriction)
+    // Display jobs matching student's department from Firebase
     async function displayJobs() {
         const userData = getUserData();
         const jobsGrid = document.getElementById('jobsGrid');
         const noJobsMessage = document.getElementById('noJobsMessage');
 
-        const allCategories = ['document-summary', 'legal-research', 'legal-filings', 'corporate-advisory'];
-
         let jobs = [];
 
-        // Try Firebase first
+        // Fetch strictly from Firebase using student's department
         try {
             // Ensure jobManager is ready
             await waitForJobManager();
             if (window.jobManager) {
-                if (typeof window.jobManager.getAllJobs === 'function') {
-                    jobs = await window.jobManager.getAllJobs();
-                } else if (typeof window.jobManager.getJobsByCategory === 'function') {
-                    const byCategory = await Promise.all(allCategories.map(cat => window.jobManager.getJobsByCategory(cat).catch(() => [])));
-                    jobs = byCategory.flat();
-                } else {
-                    throw new Error('No job fetching API found');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const studentDept = currentUser?.department;
+                if (!studentDept) {
+                    throw new Error('Missing student department. Update your profile to see jobs.');
                 }
+                if (typeof window.jobManager.getJobsByDepartment !== 'function') {
+                    throw new Error('Jobs API unavailable');
+                }
+                jobs = await window.jobManager.getJobsByDepartment(studentDept);
             } else {
                 throw new Error('Firebase not available');
             }
         } catch (firebaseError) {
-            // Fallback to local storage
-            if (window.localJobsManager && typeof window.localJobsManager.getAllJobs === 'function') {
-                jobs = window.localJobsManager.getAllJobs();
-            } else {
-                jobs = JSON.parse(localStorage.getItem('jobs') || '[]');
-            }
-
-            // As a final fallback, merge static demo categories
-            if (!jobs.length && typeof jobCategories === 'object') {
-                jobs = Object.values(jobCategories).flat();
-            }
+            // Show error and stop if Firebase path fails
+            jobsGrid.style.display = 'none';
+            noJobsMessage.style.display = 'block';
+            noJobsMessage.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h3>No jobs available</h3>
+                    <p>${firebaseError?.message || 'Unable to load jobs from server.'}</p>
+                </div>
+            `;
+            return;
         }
 
         // Best-effort sort by createdAt desc if available

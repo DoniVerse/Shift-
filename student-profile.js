@@ -39,15 +39,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (userDoc.exists()) {
                     const firestoreData = userDoc.data();
-            
-                    
-                    // Merge Firestore data with localStorage data
+
+                    // Merge Firestore data with localStorage data (prefer Firestore)
                     userData = {
                         ...userData,
-                        name: firestoreData.name || userData.name,
-                        profilePicture: firestoreData.profilePicture || firestoreData.logo
+                        name: firestoreData.name || firestoreData.fullName || userData.name,
+                        email: firestoreData.email || userData.email,
+                        university: firestoreData.university || firestoreData.universityName || userData.university,
+                        department: firestoreData.department || userData.department,
+                        yearOfStudy: firestoreData.yearOfStudy || userData.yearOfStudy,
+                        linkedinUrl: firestoreData.linkedinUrl || userData.linkedinUrl,
+                        profilePicture: firestoreData.profilePicture || firestoreData.logo || userData.profilePicture
                     };
-                    
+
                     // Update localStorage with Firestore data
                     localStorage.setItem('currentUser', JSON.stringify(userData));
                 }

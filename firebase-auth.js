@@ -28,7 +28,7 @@ const firebaseConfig = {
     authDomain: "shift-3140e.firebaseapp.com",
     databaseURL: "https://shift-3140e-default-rtdb.firebaseio.com",
     projectId: "shift-3140e",
-    storageBucket: "shift-3140e.firebasestorage.app",
+    storageBucket: "shift-3140e.appspot.com",
     messagingSenderId: "716245939154",
     appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
     measurementId: "G-F6WJ0T3E71"
@@ -121,6 +121,7 @@ class FirebaseAuthManager {
             department: formData.get('department'),
             linkedinUrl: formData.get('linkedinUrl'),
             userType: 'student',
+            ID: formData.get('studentId'),
             termsAccepted: true,
             termsAcceptedAt: new Date().toISOString()
         };
@@ -155,6 +156,7 @@ class FirebaseAuthManager {
             phone: document.getElementById('employer-phone')?.value,
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
+            desiredDepartment: document.getElementById('employer-department')?.value,
             logo: logoDataUrl,
             userType: 'employer',
             termsAccepted: true,
@@ -180,7 +182,7 @@ class FirebaseAuthManager {
                         document.querySelector('input[type="password"]')?.value;
 
         try {
-            await this.loginUser(email, password);
+            await this.loginUser(email, password, 'student');
         } catch (error) {
             console.error('Student login error:', error);
         }
@@ -194,7 +196,7 @@ class FirebaseAuthManager {
         const password = document.getElementById('employer-password')?.value;
 
         try {
-            await this.loginUser(email, password);
+            await this.loginUser(email, password, 'employer');
         } catch (error) {
             console.error('Employer login error:', error);
         }
@@ -236,19 +238,28 @@ class FirebaseAuthManager {
 
         } catch (error) {
             this.hideLoading();
+            if (error?.code === 'auth/email-already-in-use') {
+                alert('This email is already in use. Try logging in instead.');
+                return;
+            }
+            if (error?.code === 'storage/unauthorized' || error?.code === 'storage/cors') {
+                alert('Upload blocked by browser/CORS. Please retry or use a different browser.');
+                return;
+            }
             throw error;
         }
     }
 
     // Login user
-    async loginUser(email, password) {
+    async loginUser(email, password, userTypeHint) {
         try {
             this.showLoading('Signing in...');
 
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             
             // Get user data from Firestore
-            const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+            const userRef = doc(db, 'users', userCredential.user.uid);
+            let userDoc = await getDoc(userRef);
             
             if (userDoc.exists()) {
                 const userData = userDoc.data();
@@ -263,7 +274,20 @@ class FirebaseAuthManager {
                     window.location.href = 'job-catagory.html';
                 }
             } else {
-                throw new Error('User profile not found');
+                // Create a minimal profile if missing
+                const minimalData = {
+                    email: userCredential.user.email,
+                    userType: userTypeHint || 'student',
+                    name: userCredential.user.displayName || (userCredential.user.email ? userCredential.user.email.split('@')[0] : 'User')
+                };
+                const created = await this.createUserDocument(userCredential.user, minimalData);
+                this.updateLocalStorage(created);
+                this.hideLoading();
+                if (created.userType === 'student') {
+                    window.location.href = 'Job-listing.html';
+                } else {
+                    window.location.href = 'job-catagory.html';
+                }
             }
 
         } catch (error) {
@@ -333,6 +357,9 @@ class FirebaseAuthManager {
             if (userData.logo && isSafeValue(userData.logo)) {
                 userProfile.logo = userData.logo;
             }
+            if (userData.desiredDepartment && isSafeValue(userData.desiredDepartment)) {
+                userProfile.desiredDepartment = userData.desiredDepartment;
+            }
         }
 
 
@@ -395,6 +422,7 @@ class FirebaseAuthManager {
             localData.phone = userData.phone;
             localData.registrationNumber = userData.registrationNumber;
             localData.logo = userData.logo;
+            localData.desiredDepartment = userData.desiredDepartment;
         }
 
         localStorage.setItem('currentUser', JSON.stringify(localData));

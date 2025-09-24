@@ -2,13 +2,16 @@
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import { 
     getFirestore, 
+    initializeFirestore,
     collection, 
     addDoc, 
     getDocs, 
     query, 
     where, 
     orderBy, 
-    serverTimestamp 
+    serverTimestamp,
+    doc,
+    getDoc
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
@@ -17,7 +20,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyA2Is7jXaYL4k04tSaI-CRzmtisQ5VSmz4",
     authDomain: "shift-3140e.firebaseapp.com",
     projectId: "shift-3140e",
-    storageBucket: "shift-3140e.firebaseapp.com",
+    storageBucket: "shift-3140e.appspot.com",
     messagingSenderId: "716245939154",
     appId: "1:716245939154:web:64d567a1ded3fa98b34e0b",
     measurementId: "G-F6WJ0T3E71"
@@ -31,7 +34,12 @@ try {
   app = initializeApp(firebaseConfig);
 }
 
-const db = getFirestore(app);
+let db;
+try {
+  db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
+} catch (e) {
+  db = getFirestore(app);
+}
 const auth = getAuth(app);
 
 // Job Management Functions
@@ -56,13 +64,21 @@ class JobManager {
         }
 
         try {
+            // Get employer desiredDepartment from users profile if not provided
+            let desiredDepartment = jobData.department || jobData.desiredDepartment;
+            try {
+                const userDoc = await getDoc(doc(this.db, 'users', user.uid));
+                if (!desiredDepartment && userDoc.exists()) {
+                    desiredDepartment = userDoc.data().desiredDepartment;
+                }
+            } catch (_) {}
+
             const jobDoc = {
                 title: jobData.title,
                 description: jobData.description,
                 paymentCode: jobData.paymentCode,
                 expectedHours: jobData.expectedHours,
-                category: jobData.category,
-                categoryTitle: jobData.categoryTitle,
+                department: desiredDepartment || jobData.department || 'General',
                 employerName: jobData.employerName,
                 employerEmail: jobData.employerEmail,
                 employerId: user.uid,
@@ -70,6 +86,8 @@ class JobManager {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             };
+            if (jobData.category) jobDoc.category = jobData.category;
+            if (jobData.categoryTitle) jobDoc.categoryTitle = jobData.categoryTitle;
 
             const docRef = await addDoc(collection(this.db, this.jobsCollection), jobDoc);
 
@@ -142,6 +160,27 @@ class JobManager {
             return jobs;
         } catch (error) {
             console.error('Error fetching all jobs:', error.message);
+            return [];
+        }
+    }
+
+    // Get jobs by student department
+    async getJobsByDepartment(department) {
+        try {
+            const q = query(
+                collection(this.db, this.jobsCollection),
+                where('status', '==', 'active'),
+                where('department', '==', department),
+                orderBy('createdAt', 'desc')
+            );
+            const querySnapshot = await getDocs(q);
+            const jobs = [];
+            querySnapshot.forEach((doc) => {
+                jobs.push({ id: doc.id, ...doc.data() });
+            });
+            return jobs;
+        } catch (error) {
+            console.error('Error fetching jobs by department:', error.message);
             return [];
         }
     }
