@@ -156,20 +156,31 @@ class JobManager {
         }
     }
 
-    // Get jobs by student department
+    // Get jobs by student department. Include global 'Other' department jobs
     async getJobsByDepartment(department) {
         try {
-            const q = query(
+            const jobs = [];
+
+            // First: jobs matching student's department
+            const qDept = query(
                 collection(this.db, this.jobsCollection),
                 where('status', '==', 'active'),
                 where('department', '==', department),
                 orderBy('createdAt', 'desc')
             );
-            const querySnapshot = await getDocs(q);
-            const jobs = [];
-            querySnapshot.forEach((doc) => {
-                jobs.push({ id: doc.id, ...doc.data() });
-            });
+            const snapDept = await getDocs(qDept);
+            snapDept.forEach((d) => jobs.push({ id: d.id, ...d.data() }));
+
+            // Second: global jobs marked as 'Other'
+            const qOther = query(
+                collection(this.db, this.jobsCollection),
+                where('status', '==', 'active'),
+                where('department', '==', 'Other'),
+                orderBy('createdAt', 'desc')
+            );
+            const snapOther = await getDocs(qOther);
+            snapOther.forEach((d) => jobs.push({ id: d.id, ...d.data(), _global: true }));
+
             return jobs;
         } catch (error) {
             console.error('Error fetching jobs by department:', error.message);

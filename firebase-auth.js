@@ -156,7 +156,8 @@ class FirebaseAuthManager {
             phone: document.getElementById('employer-phone')?.value,
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
-            desiredDepartment: document.getElementById('employer-department')?.value || '',
+            // No department preference at signup; employers choose per job
+            desiredDepartment: '',
             logo: logoDataUrl,
             userType: 'employer',
             termsAccepted: true,
@@ -357,9 +358,7 @@ class FirebaseAuthManager {
             if (userData.logo && isSafeValue(userData.logo)) {
                 userProfile.logo = userData.logo;
             }
-            if (userData.desiredDepartment && isSafeValue(userData.desiredDepartment)) {
-                userProfile.desiredDepartment = userData.desiredDepartment;
-            }
+            // desiredDepartment removed from employer profile; chosen per job
         }
 
 

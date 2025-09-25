@@ -19,7 +19,8 @@
 
 
         <div class="content" style="padding: 24px;">
-            <button onclick="goToAddJob()" style="background:#2563eb;color:#fff;border:none;padding:14px 20px;border-radius:8px;font-size:1rem;cursor:pointer;width:100%;max-width:480px;margin:0 auto;display:block;">+ Post a Job</button>
+            <div id="myJobsHeader" style="font-weight:600;margin-bottom:12px;">My Posted Jobs</div>
+            <div id="myJobsList" style="display:grid;grid-template-columns:1fr;gap:12px;"></div>
         </div>
 
         <div class="bottom-nav">
@@ -108,6 +109,54 @@
                 alert('Access denied. Only employers can access this page.');
                 window.location.href = 'student-profile.html';
             }
+
+            // Render my jobs (Firebase preferred)
+            const myJobsList = document.getElementById('myJobsList');
+            async function renderMyJobsWithUid(uid) {
+                myJobsList.innerHTML = '<div style="text-align:center;color:#666;">Loading your jobs...</div>';
+                try {
+                    let jobs = [];
+                    if (uid && window.jobManager && typeof window.jobManager.getJobsByEmployer === 'function') {
+                        jobs = await window.jobManager.getJobsByEmployer(uid);
+                    }
+                    // Fallback to local jobs by email
+                    if (!jobs || jobs.length === 0) {
+                        const allLocalJobs = JSON.parse(localStorage.getItem('jobs') || '[]');
+                        const employerEmail = (JSON.parse(localStorage.getItem('employerInfo') || '{}').email) || (JSON.parse(localStorage.getItem('currentUser') || '{}').email) || '';
+                        jobs = allLocalJobs.filter(j => j.employerEmail === employerEmail);
+                    }
+                    if (!jobs || jobs.length === 0) {
+                        myJobsList.innerHTML = '<div style="text-align:center;color:#999;">No jobs posted yet.</div>';
+                        return;
+                    }
+                    myJobsList.innerHTML = '';
+                    jobs.forEach(job => {
+                        const card = document.createElement('div');
+                        card.style.border = '1px solid #e5e7eb';
+                        card.style.borderRadius = '10px';
+                        card.style.padding = '12px';
+                        card.style.background = '#fff';
+                        card.innerHTML = `
+                            <div style="font-weight:600;margin-bottom:6px;">${job.title || ''}</div>
+                            <div style="color:#555;margin-bottom:6px;">${job.description || ''}</div>
+                            <div style="font-size:12px;color:#666;">Department: ${job.department || 'General'}</div>
+                        `;
+                        myJobsList.appendChild(card);
+                    });
+                } catch (e) {
+                    myJobsList.innerHTML = '<div style="text-align:center;color:#999;">Failed to load jobs.</div>';
+                }
+            }
+            // Wait for auth to ensure uid is ready
+            if (window.firebaseAuth && typeof window.firebaseAuth.onAuthStateChange === 'function') {
+                window.firebaseAuth.onAuthStateChange(function(firebaseUser) {
+                    const uid = firebaseUser ? firebaseUser.uid : '';
+                    renderMyJobsWithUid(uid);
+                });
+            } else {
+                const uid = (window.firebaseAuth && window.firebaseAuth.currentUser && window.firebaseAuth.currentUser.uid) || '';
+                renderMyJobsWithUid(uid);
+            }
         });
 
 
@@ -186,5 +235,8 @@ if (applicationsNavBtn) {
     };
 }
 </script>
+
+<!-- Floating Post Job Button -->
+<button onclick="goToAddJob()" style="position:fixed;right:20px;bottom:80px;width:56px;height:56px;border-radius:50%;background:var(--color-primary);color:#fff;border:none;font-size:28px;box-shadow:0 6px 16px rgba(0,0,0,0.2);cursor:pointer;z-index:1000;">+</button>
 </body>
 </html>
