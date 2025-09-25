@@ -156,7 +156,7 @@ class FirebaseAuthManager {
             phone: document.getElementById('employer-phone')?.value,
             companyType: document.getElementById('employer-type')?.value,
             registrationNumber: document.getElementById('employer-reg')?.value,
-            desiredDepartment: document.getElementById('employer-department')?.value,
+            desiredDepartment: document.getElementById('employer-department')?.value || '',
             logo: logoDataUrl,
             userType: 'employer',
             termsAccepted: true,

@@ -45,8 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const app = window.firebaseApp || window.app;
         const db = window.firebaseFirestore || window.db;
         const auth = window.firebaseAuth || window.auth;
-        const storageModule = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js');
-        const storage = window.firebaseStorage || storageModule.getStorage(app, 'gs://shift-3140e.appspot.com');
+        const storage = window.firebaseStorage || (await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js')).getStorage(app);
         const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js');
 
         let studentIdImageUrl = '';

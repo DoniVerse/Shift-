@@ -1,43 +1,18 @@
 // employer-applications.js
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-// Helper function to format timestamps
-function formatTimestamp(timestamp) {
-    if (!timestamp) return 'N/A';
-    
-    let date;
-    if (timestamp.toDate) {
-        // Firestore timestamp
-        date = timestamp.toDate();
-    } else if (timestamp.seconds) {
-        // Firestore timestamp as object
-        date = new Date(timestamp.seconds * 1000);
-    } else if (typeof timestamp === 'string') {
-        // ISO string
-        date = new Date(timestamp);
-    } else {
-        // Date object or other
-        date = new Date(timestamp);
-    }
-    
-    return date.toLocaleString();
-}
-
 // Add job start/finish handlers to update Firestore
 window.handleStartJob = async function(appId) {
   const db = window.firebaseFirestore;
   if (!db) return alert('Firestore not available.');
   if (!confirm('Start this job?')) return;
   try {
+    const { doc, updateDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
     const appRef = doc(db, 'applications', appId);
-    const timestamp = new Date().toISOString();
-    await updateDoc(appRef, { 
-      startedAt: timestamp, 
-      status: 'started',
-      updatedAt: new Date()
-    });
+    await updateDoc(appRef, { status: 'started', startedAt: serverTimestamp() });
     alert('Job started!');
+    // Always refresh applications list after starting job
     if (typeof loadEmployerApplications === 'function') {
       loadEmployerApplications(window.firebaseAuth.currentUser.uid);
     } else {
@@ -53,14 +28,11 @@ window.handleFinishJob = async function(appId) {
   if (!db) return alert('Firestore not available.');
   if (!confirm('Finish this job?')) return;
   try {
+    const { doc, updateDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
     const appRef = doc(db, 'applications', appId);
-    const timestamp = new Date().toISOString();
-    await updateDoc(appRef, { 
-      finishedAt: timestamp, 
-      status: 'finished',
-      updatedAt: new Date()
-    });
+    await updateDoc(appRef, { status: 'finished', finishedAt: serverTimestamp() });
     alert('Job finished!');
+    // Always refresh applications list after finishing job
     if (typeof loadEmployerApplications === 'function') {
       loadEmployerApplications(window.firebaseAuth.currentUser.uid);
     } else {
@@ -144,8 +116,8 @@ async function loadEmployerApplications(employerUid) {
               <img src="QR.jpg" alt="QR Code" style="border:1px solid #ccc;width:150px;height:150px;">
             </div>
           ` : ''}
-          ${app.startedAt ? `<p style='color:#22c55e; background-color:#f0fdf4; padding:8px; border-radius:4px; margin:8px 0;'><strong>✅ Started at:</strong> ${formatTimestamp(app.startedAt)}</p>` : ''}
-          ${app.finishedAt ? `<p style='color:#dc2626; background-color:#fef2f2; padding:8px; border-radius:4px; margin:8px 0;'><strong>🏁 Finished at:</strong> ${formatTimestamp(app.finishedAt)}</p>` : ''}
+          ${app.startedAt ? `<p style='color:#22c55e; background-color:#f0fdf4; padding:8px; border-radius:4px; margin:8px 0;'><strong>✅ Started at:</strong> ${app.startedAtFormatted || new Date(app.startedAt.seconds ? app.startedAt.seconds * 1000 : app.startedAt).toLocaleString()}</p>` : ''}
+          ${app.finishedAt ? `<p style='color:#dc2626; background-color:#fef2f2; padding:8px; border-radius:4px; margin:8px 0;'><strong>🏁 Finished at:</strong> ${app.finishedAtFormatted || new Date(app.finishedAt.seconds ? app.finishedAt.seconds * 1000 : app.finishedAt).toLocaleString()}</p>` : ''}
         </div>
       `;
     });
@@ -161,7 +133,25 @@ window.handleApplicationAction = async function(appId, action, studentId, jobTit
   if (!confirm(`Are you sure you want to ${action} this application?`)) return;
   try {
     const appRef = doc(db, 'applications', appId);
-    await updateDoc(appRef, { status: action });
+    const { serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+    // Fetch current application to preserve previous timestamps
+    const appSnap = await getDoc(appRef);
+    const appData = appSnap.exists() ? appSnap.data() : {};
+    let updateFields = { status: action };
+    if (appData.acceptedAt) updateFields.acceptedAt = appData.acceptedAt;
+    if (appData.startedAt) updateFields.startedAt = appData.startedAt;
+    if (appData.finishedAt) updateFields.finishedAt = appData.finishedAt;
+    if (appData.rejectedAt) updateFields.rejectedAt = appData.rejectedAt;
+    if (action === 'accepted') {
+      updateFields.acceptedAt = serverTimestamp();
+    } else if (action === 'started') {
+      updateFields.startedAt = serverTimestamp();
+    } else if (action === 'finished') {
+      updateFields.finishedAt = serverTimestamp();
+    } else if (action === 'rejected') {
+      updateFields.rejectedAt = serverTimestamp();
+    }
+    await updateDoc(appRef, updateFields);
     if (action === 'accepted') {
       // Create notification for student
       const notificationsRef = collection(db, 'notifications');

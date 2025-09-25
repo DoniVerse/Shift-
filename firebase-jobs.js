@@ -64,21 +64,13 @@ class JobManager {
         }
 
         try {
-            // Get employer desiredDepartment from users profile if not provided
-            let desiredDepartment = jobData.department || jobData.desiredDepartment;
-            try {
-                const userDoc = await getDoc(doc(this.db, 'users', user.uid));
-                if (!desiredDepartment && userDoc.exists()) {
-                    desiredDepartment = userDoc.data().desiredDepartment;
-                }
-            } catch (_) {}
-
+            // Use department provided at publish time; do not fallback to employer profile
             const jobDoc = {
                 title: jobData.title,
                 description: jobData.description,
                 paymentCode: jobData.paymentCode,
                 expectedHours: jobData.expectedHours,
-                department: desiredDepartment || jobData.department || 'General',
+                department: jobData.department || jobData.desiredDepartment || 'General',
                 employerName: jobData.employerName,
                 employerEmail: jobData.employerEmail,
                 employerId: user.uid,
