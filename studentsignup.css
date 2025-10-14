@@ -289,3 +289,36 @@ body {
         padding: 14px;
     }
 }
+
+/* Terms and Conditions */
+.terms-group {
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.terms-checkbox {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-text-light);
+}
+
+.terms-checkbox input[type="checkbox"] {
+    margin-right: 12px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+.terms-checkbox a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.terms-checkbox a:hover {
+    text-decoration: underline;
+}
